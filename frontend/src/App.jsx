@@ -6,6 +6,7 @@ import { cyberTheme } from './theme';
 import AppLayout from './components/Layout/AppLayout';
 import Dashboard from './pages/Dashboard';
 import Investigate from './pages/Investigate';
+import BulkTriage from './pages/BulkTriage';
 import History from './pages/History';
 import InvestigationDetail from './pages/InvestigationDetail';
 import Settings from './pages/Settings';
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/" element={<AppLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="investigate" element={<Investigate />} />
+          <Route path="bulk" element={<BulkTriage />} />
             <Route path="history" element={<History />} />
             <Route path="investigation/:id" element={<InvestigationDetail />} />
             <Route path="settings" element={<Settings />} />

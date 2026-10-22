@@ -10,9 +10,9 @@ import {
   Button,
   Alert,
   Skeleton,
-  Divider,
+  CircularProgress,
 } from '@mui/material';
-import { ArrowLeft, Clock, ShieldAlert, Layers, Hash } from 'lucide-react';
+import { ArrowLeft, Download, ShieldAlert } from 'lucide-react';
 
 import { threatApi } from '../api/client';
 import RiskScoreMeter from '../components/Common/RiskScoreMeter';
@@ -26,6 +26,7 @@ export default function InvestigationDetail() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -43,6 +44,20 @@ export default function InvestigationDetail() {
       setError('Unable to load investigation record. It may have been deleted or the ID is invalid.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!data) return;
+    try {
+      setDownloadingPdf(true);
+      const safeInd = data.normalized_indicator.replace(/[^a-zA-Z0-9_\-\.]/g, '_').slice(0, 30);
+      await threatApi.downloadReportPDF(data.id, `ThreatLens_Report_${data.id.slice(0, 8)}_${safeInd}.pdf`);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to generate PDF report.');
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -73,7 +88,7 @@ export default function InvestigationDetail() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* Back button and Record Header */}
+      {/* Top Action Bar */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
         <Button
           startIcon={<ArrowLeft size={16} />}
@@ -82,9 +97,22 @@ export default function InvestigationDetail() {
         >
           Back to History
         </Button>
-        <Typography variant="caption" sx={{ color: '#64748b', fontFamily: "'JetBrains Mono', monospace" }}>
-          ARCHIVE ID: {data.id}
-        </Typography>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="caption" sx={{ color: '#64748b', fontFamily: "'JetBrains Mono', monospace" }}>
+            ARCHIVE ID: {data.id}
+          </Typography>
+
+          <Button
+            variant="contained"
+            disabled={downloadingPdf}
+            startIcon={downloadingPdf ? <CircularProgress size={16} color="inherit" /> : <Download size={16} />}
+            onClick={handleDownloadPDF}
+            sx={{ px: 2.5 }}
+          >
+            {downloadingPdf ? 'Generating PDF...' : 'Download PDF Report'}
+          </Button>
+        </Box>
       </Box>
 
       {/* Main IOC Banner */}

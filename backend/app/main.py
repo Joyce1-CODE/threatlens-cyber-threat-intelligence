@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.database import init_db
-from app.routers import health, investigate, stats
+from app.routers import health, investigate, stats, bulk
 from app.ioc_validator import IOCValidationError
 
 @asynccontextmanager
@@ -42,3 +42,5 @@ async def ioc_validation_exception_handler(request: Request, exc: IOCValidationE
 app.include_router(health.router, prefix="/api")
 app.include_router(investigate.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
+
+app.include_router(bulk.router, prefix="/api")

@@ -12,7 +12,7 @@ import {
   Alert,
   Skeleton,
 } from '@mui/material';
-import { Shield, ArrowRight, ExternalLink, Calendar, Hash, Globe, Lock } from 'lucide-react';
+import { Shield, ArrowRight, Download, ExternalLink, Calendar, Hash, Globe, Lock } from 'lucide-react';
 
 import { threatApi } from '../api/client';
 import IOCInputForm from '../components/Investigation/IOCInputForm';
@@ -27,6 +27,22 @@ export default function Investigate() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  
+  const handleDownloadPDF = async () => {
+    if (!result) return;
+    try {
+      setDownloadingPdf(true);
+      const safeInd = result.normalized_indicator.replace(/[^a-zA-Z0-9_\-\.]/g, '_').slice(0, 30);
+      await threatApi.downloadReportPDF(result.id, `ThreatLens_Report_${result.id.slice(0, 8)}_${safeInd}.pdf`);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to generate PDF report.');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const handleInvestigate = async (indicator, indicatorType) => {
     try {
@@ -108,15 +124,27 @@ export default function Investigate() {
                   </Typography>
                 </Box>
 
-                <Button
-                  variant="outlined"
-                  size="small"
-                  endIcon={<ArrowRight size={14} />}
-                  onClick={() => navigate(`/investigation/${result.id}`)}
-                  sx={{ borderColor: 'rgba(255, 255, 255, 0.2)', color: '#f8fafc' }}
-                >
-                  View Permanent Archive
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1.5 }}>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    disabled={downloadingPdf}
+                    startIcon={<Download size={14} />}
+                    onClick={handleDownloadPDF}
+                    sx={{ px: 2 }}
+                  >
+                    {downloadingPdf ? 'Generating PDF...' : 'Download PDF Report'}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    endIcon={<ArrowRight size={14} />}
+                    onClick={() => navigate(`/investigation/${result.id}`)}
+                    sx={{ borderColor: 'rgba(255, 255, 255, 0.2)', color: '#f8fafc' }}
+                  >
+                    View Details
+                  </Button>
+                </Box>
               </Box>
 
               {/* Verdict Summary Callout */}

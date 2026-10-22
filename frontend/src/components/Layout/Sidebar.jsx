@@ -8,6 +8,7 @@ import ProviderStatusBadge from '../Common/ProviderStatusBadge';
 const navItems = [
   { label: 'Overview', path: '/', icon: LayoutDashboard },
   { label: 'Investigate', path: '/investigate', icon: Search },
+  { label: 'Bulk Triage', path: '/bulk', icon: Layers },
   { label: 'History', path: '/history', icon: History },
   { label: 'Settings', path: '/settings', icon: Settings },
 ];

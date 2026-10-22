@@ -1,5 +1,6 @@
+import re
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -11,6 +12,7 @@ from app.schemas import (
 from app.ioc_validator import validate_and_normalize_ioc, IOCValidationError
 from app.services.aggregator import ThreatAggregator
 from app.services.history_service import HistoryService
+from app.services.pdf_generator import generate_threat_report_pdf
 
 router = APIRouter(prefix="", tags=["IOC Investigation"])
 aggregator = ThreatAggregator()
@@ -75,6 +77,32 @@ def get_investigation_details(
             detail=f"Investigation with ID '{investigation_id}' was not found."
         )
     return record
+
+@router.get("/investigations/{investigation_id}/report.pdf")
+def download_investigation_report_pdf(
+    investigation_id: str,
+    db: Session = Depends(get_db)
+):
+    record = HistoryService.get_by_id(db, investigation_id)
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Investigation with ID '{investigation_id}' was not found."
+        )
+
+    pdf_bytes = generate_threat_report_pdf(record)
+
+    # Sanitize indicator for safe ASCII filename
+    safe_indicator = re.sub(r"[^a-zA-Z0-9_\-\.]", "_", record.normalized_indicator)[:40]
+    filename = f"ThreatLens_Report_{record.id[:8]}_{safe_indicator}.pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+    )
 
 @router.delete("/investigations/{investigation_id}", status_code=status.HTTP_200_OK)
 def delete_investigation(
