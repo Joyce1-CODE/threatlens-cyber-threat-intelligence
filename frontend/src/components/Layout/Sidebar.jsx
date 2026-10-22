@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Box, Typography, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider } from '@mui/material';
-import { LayoutDashboard, Search, History, Settings, ShieldCheck, Activity } from 'lucide-react';
+import { LayoutDashboard, Search, Layers, History, Settings, ShieldCheck, Activity } from 'lucide-react';
 import { threatApi } from '../../api/client';
 import ProviderStatusBadge from '../Common/ProviderStatusBadge';
 
