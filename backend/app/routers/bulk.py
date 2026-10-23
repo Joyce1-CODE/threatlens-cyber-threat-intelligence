@@ -5,7 +5,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.models import User
 from app.services.bulk_service import BulkService, BulkServiceError
+from app.services.auth_service import require_analyst, require_authenticated
 
 router = APIRouter(prefix="/bulk", tags=["Bulk IOC Triage"])
 
@@ -21,7 +23,8 @@ class BulkExportRequest(BaseModel):
 
 @router.post("/preview")
 async def preview_csv_upload(
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_analyst)
 ):
     # Verify file extension
     filename = file.filename or "upload.csv"
@@ -49,6 +52,7 @@ async def preview_csv_upload(
 @router.post("/triage")
 async def execute_bulk_triage(
     payload: BulkTriageRequest,
+    current_user: User = Depends(require_analyst),
     db: Session = Depends(get_db)
 ):
     if not payload.items:
@@ -62,7 +66,10 @@ async def execute_bulk_triage(
     return triage_result
 
 @router.post("/export")
-def export_bulk_results_csv(payload: BulkExportRequest):
+def export_bulk_results_csv(
+    payload: BulkExportRequest,
+    current_user: User = Depends(require_authenticated)
+):
     if not payload.results:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

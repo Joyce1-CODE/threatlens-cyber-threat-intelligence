@@ -14,7 +14,7 @@ async def test_virustotal_missing_key():
 @pytest.mark.asyncio
 async def test_virustotal_success_mocked():
     vt = VirusTotalProvider(api_key="mock_key_vt")
-    
+
     mock_payload = {
         "data": {
             "attributes": {
@@ -33,13 +33,13 @@ async def test_virustotal_success_mocked():
             }
         }
     }
-    
+
     mock_response = httpx.Response(200, json=mock_payload, request=httpx.Request("GET", "https://mock.com"))
-    
+
     with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
         mock_get.return_value = mock_response
         result = await vt.lookup("evil.com", "domain")
-        
+
     assert result.status == "success"
     assert result.detections == 12
     assert result.total_engines == 68
@@ -50,18 +50,18 @@ async def test_virustotal_success_mocked():
 async def test_virustotal_rate_limit_mocked():
     vt = VirusTotalProvider(api_key="mock_key_vt")
     mock_response = httpx.Response(429, text="Quota exceeded", request=httpx.Request("GET", "https://mock.com"))
-    
+
     with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
         mock_get.return_value = mock_response
-        result = await vt.lookup("8.8.8.8", "ipv4")
-        
+        result = await vt.lookup("8.8.8.8", "ipv4", use_cache=False)
+
     assert result.status == "rate_limited"
     assert "rate limit" in result.summary.lower()
 
 @pytest.mark.asyncio
 async def test_alienvault_otx_success_mocked():
     otx = AlienVaultOTXProvider(api_key="mock_key_otx")
-    
+
     mock_payload = {
         "pulse_info": {
             "count": 3,
@@ -78,13 +78,13 @@ async def test_alienvault_otx_success_mocked():
             ]
         }
     }
-    
+
     mock_response = httpx.Response(200, json=mock_payload, request=httpx.Request("GET", "https://mock.com"))
-    
+
     with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
         mock_get.return_value = mock_response
         result = await otx.lookup("198.51.100.1", "ipv4")
-        
+
     assert result.status == "success"
     assert result.detections == 3
     assert "CobaltStrike" in result.attributes["malware_families"]

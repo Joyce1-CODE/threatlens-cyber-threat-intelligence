@@ -3,10 +3,16 @@ import { Box, Typography, CircularProgress } from '@mui/material';
 import SeverityBadge from './SeverityBadge';
 
 export default function RiskScoreMeter({ score = 0, severity = 'Low', confidence = 'Low' }) {
-  let color = '#10b981';
-  if (score >= 75) color = '#ef4444';
-  else if (score >= 50) color = '#f97316';
-  else if (score >= 20) color = '#f59e0b';
+  let color = '#16A34A';
+  if (severity === 'Unknown' || severity === 'Unverified' || confidence === 'None') {
+    color = '#64748B';
+  } else if (score >= 75) {
+    color = '#DC2626';
+  } else if (score >= 50) {
+    color = '#EA580C';
+  } else if (score >= 20) {
+    color = '#D97706';
+  }
 
   return (
     <Box
@@ -15,12 +21,14 @@ export default function RiskScoreMeter({ score = 0, severity = 'Low', confidence
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        p: 2.5,
-        bgcolor: '#0c1322',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: 3,
+        p: 2.8,
+        bgcolor: '#FFFFFF',
+        border: '1px solid #DCE4EE',
+        borderRadius: 2.5,
+        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
         position: 'relative',
         minWidth: 200,
+        height: '100%',
       }}
     >
       <Box sx={{ position: 'relative', display: 'inline-flex', my: 1 }}>
@@ -30,7 +38,7 @@ export default function RiskScoreMeter({ score = 0, severity = 'Low', confidence
           value={100}
           size={120}
           thickness={5}
-          sx={{ color: 'rgba(255, 255, 255, 0.06)' }}
+          sx={{ color: '#E2E8F0' }}
         />
         {/* Actual Value Progress */}
         <CircularProgress
@@ -43,7 +51,6 @@ export default function RiskScoreMeter({ score = 0, severity = 'Low', confidence
             position: 'absolute',
             left: 0,
             strokeLinecap: 'round',
-            filter: `drop-shadow(0 0 8px ${color}88)`,
           }}
         />
         <Box
@@ -62,11 +69,11 @@ export default function RiskScoreMeter({ score = 0, severity = 'Low', confidence
           <Typography
             variant="h4"
             component="div"
-            sx={{ fontWeight: 800, color: '#f8fafc', lineHeight: 1 }}
+            sx={{ fontWeight: 800, color: '#172B4D', lineHeight: 1 }}
           >
             {score}
           </Typography>
-          <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mt: 0.3 }}>
+          <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600, mt: 0.3 }}>
             / 100
           </Typography>
         </Box>
@@ -74,8 +81,8 @@ export default function RiskScoreMeter({ score = 0, severity = 'Low', confidence
 
       <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.8 }}>
         <SeverityBadge severity={severity} size="medium" />
-        <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.75rem' }}>
-          Confidence: <strong style={{ color: '#f1f5f9' }}>{confidence}</strong>
+        <Typography variant="caption" sx={{ color: '#64748B', fontSize: '0.75rem' }}>
+          Confidence: <strong style={{ color: '#172B4D' }}>{confidence}</strong>
         </Typography>
       </Box>
     </Box>

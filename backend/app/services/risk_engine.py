@@ -4,14 +4,14 @@ from app.providers.base import ProviderResult
 class RiskScoringEngine:
     """
     ThreatLens AI Deterministic Risk Scoring Engine.
-    
+
     Principles:
     1. Deterministic and transparent: Every point is accounted for in factor_breakdown.
     2. Missing data is never treated as evidence of safety.
     3. Multi-source synergy: Corroboration across independent intelligence platforms
        yields a validated cross-correlation bonus.
     4. Heuristic labeling: Explicitly marked as ThreatLens AI heuristic assessment.
-    
+
     Severity Tiers:
     - 0  to 19: Low (Benign, clean, or unobserved)
     - 20 to 49: Medium (Suspicious indicators, low-volume sightings)
@@ -29,11 +29,11 @@ class RiskScoringEngine:
     ) -> Dict[str, Any]:
         evidence: List[Dict[str, Any]] = []
         recommendations: List[str] = []
-        
+
         # 1. Determine Provider Availability
         vt_active = vt_result.status in ("success", "clean", "not_found")
         otx_active = otx_result.status in ("success", "clean", "not_found")
-        
+
         # Track data coverage
         if vt_active and otx_active:
             data_coverage = "Comprehensive (2/2 Sources)"
@@ -52,7 +52,7 @@ class RiskScoringEngine:
         vt_score = 0.0
         vt_detections = vt_result.detections
         vt_total = vt_result.total_engines
-        
+
         if vt_active:
             if vt_detections == 0:
                 vt_score = 0.0
@@ -124,7 +124,7 @@ class RiskScoringEngine:
         otx_attrs = otx_result.attributes
         malware_families = otx_attrs.get("malware_families", [])
         adversaries = otx_attrs.get("adversaries", [])
-        
+
         if otx_active:
             if otx_pulse_count == 0:
                 otx_score = 0.0
@@ -158,7 +158,7 @@ class RiskScoringEngine:
                     "title": f"High Threat Pulse Prevalence ({otx_pulse_count} pulses)",
                     "description": f"Widely tracked indicator referenced across {otx_pulse_count} threat campaigns."
                 })
-                
+
             # OTX Bonus: Known Malware Families
             if malware_families:
                 otx_score = min(100.0, otx_score + 15.0)
@@ -169,7 +169,7 @@ class RiskScoringEngine:
                     "title": f"Associated Malware Families: {family_str}",
                     "description": f"Indicator is directly linked to known malware signatures ({family_str})."
                 })
-                
+
             # OTX Bonus: Named Threat Actor / Adversary
             if adversaries:
                 otx_score = min(100.0, otx_score + 10.0)
@@ -190,13 +190,13 @@ class RiskScoringEngine:
 
         # 4. Synthesize Combined Risk Score
         synergy_boost = 0.0
-        
+
         if vt_active and otx_active:
             # Weighted average: 60% VT vendor engines, 40% OTX pulse intelligence
             vt_weight = 0.60
             otx_weight = 0.40
             base_score = (vt_score * vt_weight) + (otx_score * otx_weight)
-            
+
             # Synergy bonus if BOTH independent providers observed malicious threat signals
             if vt_score >= 25.0 and otx_score >= 35.0:
                 synergy_boost = 10.0
@@ -221,9 +221,11 @@ class RiskScoringEngine:
             final_calculated = 0.0
 
         risk_score = int(round(final_calculated))
-        
+
         # 5. Classify Severity
-        if risk_score >= 75:
+        if not (vt_active or otx_active):
+            severity = "Unknown"
+        elif risk_score >= 75:
             severity = "Critical"
         elif risk_score >= 50:
             severity = "High"
@@ -294,7 +296,7 @@ class RiskScoringEngine:
         malware_families: List[str]
     ) -> List[str]:
         recs: List[str] = []
-        
+
         if severity in ("Critical", "High"):
             if ioc_type in ("ipv4", "ipv6"):
                 recs.append("Immediately block inbound and outbound traffic to this IP on perimeter firewalls and Cloudflare/WAF.")

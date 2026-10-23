@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
-import { ShieldAlert, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function EmptyState({
@@ -17,9 +17,9 @@ export default function EmptyState({
         py: 6,
         px: 3,
         textAlign: 'center',
-        bgcolor: 'rgba(15, 23, 42, 0.4)',
-        border: '1px dashed rgba(255, 255, 255, 0.12)',
-        borderRadius: 3,
+        bgcolor: '#FFFFFF',
+        border: '1px dashed #DCE4EE',
+        borderRadius: 2.5,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -28,31 +28,37 @@ export default function EmptyState({
     >
       <Box
         sx={{
-          width: 56,
-          height: 56,
+          width: 54,
+          height: 54,
           borderRadius: '50%',
-          bgcolor: 'rgba(0, 242, 254, 0.08)',
-          border: '1px solid rgba(0, 242, 254, 0.2)',
+          bgcolor: 'rgba(8, 145, 178, 0.08)',
+          border: '1px solid rgba(8, 145, 178, 0.25)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#00f2fe',
+          color: '#0891B2',
           mb: 2,
         }}
       >
-        <Search size={26} />
+        <Search size={24} />
       </Box>
-      <Typography variant="h6" sx={{ fontWeight: 600, color: '#f8fafc', mb: 0.8 }}>
+      <Typography variant="h6" sx={{ fontWeight: 700, color: '#172B4D', mb: 0.8 }}>
         {title}
       </Typography>
-      <Typography variant="body2" sx={{ color: '#94a3b8', maxWidth: 440, mb: 2.5 }}>
+      <Typography variant="body2" sx={{ color: '#64748B', maxWidth: 460, mb: 2.5 }}>
         {description}
       </Typography>
       {actionText && (
         <Button
           variant="contained"
           onClick={() => navigate(actionLink)}
-          sx={{ px: 3, py: 1 }}
+          sx={{
+            bgcolor: '#0891B2',
+            color: '#FFFFFF',
+            px: 3,
+            py: 1,
+            '&:hover': { bgcolor: '#0E7490' },
+          }}
         >
           {actionText}
         </Button>

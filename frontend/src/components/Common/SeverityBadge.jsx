@@ -3,34 +3,46 @@ import { Chip, Box } from '@mui/material';
 
 const severityConfig = {
   Low: {
-    color: '#10b981',
-    bg: 'rgba(16, 185, 129, 0.12)',
-    border: 'rgba(16, 185, 129, 0.35)',
+    color: '#16A34A',
+    bg: 'rgba(22, 163, 74, 0.08)',
+    border: 'rgba(22, 163, 74, 0.25)',
     label: 'Low Risk',
   },
   Medium: {
-    color: '#f59e0b',
-    bg: 'rgba(245, 158, 11, 0.12)',
-    border: 'rgba(245, 158, 11, 0.35)',
+    color: '#D97706',
+    bg: 'rgba(217, 119, 6, 0.08)',
+    border: 'rgba(217, 119, 6, 0.25)',
     label: 'Medium Risk',
   },
   High: {
-    color: '#f97316',
-    bg: 'rgba(249, 115, 22, 0.12)',
-    border: 'rgba(249, 115, 22, 0.35)',
+    color: '#EA580C',
+    bg: 'rgba(234, 88, 12, 0.08)',
+    border: 'rgba(234, 88, 12, 0.25)',
     label: 'High Risk',
   },
   Critical: {
-    color: '#ef4444',
-    bg: 'rgba(239, 68, 68, 0.16)',
-    border: 'rgba(239, 68, 68, 0.45)',
+    color: '#DC2626',
+    bg: 'rgba(220, 38, 38, 0.08)',
+    border: 'rgba(220, 38, 38, 0.25)',
     label: 'Critical Risk',
+  },
+  Unknown: {
+    color: '#64748B',
+    bg: 'rgba(100, 116, 139, 0.08)',
+    border: 'rgba(100, 116, 139, 0.25)',
+    label: 'Unverified',
+  },
+  Unverified: {
+    color: '#64748B',
+    bg: 'rgba(100, 116, 139, 0.08)',
+    border: 'rgba(100, 116, 139, 0.25)',
+    label: 'Unverified',
   },
 };
 
 export default function SeverityBadge({ severity = 'Low', size = 'small', showDot = true }) {
   const normSev = severity ? severity.charAt(0).toUpperCase() + severity.slice(1).toLowerCase() : 'Low';
-  const cfg = severityConfig[normSev] || severityConfig.Low;
+  const cfg = severityConfig[normSev] || severityConfig[severity] || severityConfig.Low;
 
   return (
     <Chip
@@ -40,11 +52,10 @@ export default function SeverityBadge({ severity = 'Low', size = 'small', showDo
           <Box
             component="span"
             sx={{
-              width: 8,
-              height: 8,
+              width: 7,
+              height: 7,
               borderRadius: '50%',
               bgcolor: cfg.color,
-              boxShadow: `0 0 6px ${cfg.color}`,
               ml: 1,
             }}
           />

@@ -24,24 +24,26 @@ import {
   Layers,
   ShieldCheck,
   ArrowRight,
-  ExternalLink,
   KeyRound,
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
 
 import { threatApi } from '../api/client';
+import { useAuth } from '../contexts/AuthContext';
+import { Tooltip } from '@mui/material';
 import StatCard from '../components/Common/StatCard';
 import SeverityBadge from '../components/Common/SeverityBadge';
 import EmptyState from '../components/Common/EmptyState';
 
 const SEVERITY_COLORS = {
-  Low: '#10b981',
-  Medium: '#f59e0b',
-  High: '#f97316',
-  Critical: '#ef4444',
+  Low: '#16A34A',
+  Medium: '#D97706',
+  High: '#EA580C',
+  Critical: '#DC2626',
 };
 
 export default function Dashboard() {
+  const { isReadOnly } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -74,7 +76,7 @@ export default function Dashboard() {
     ? Object.entries(stats.severity_breakdown || {}).map(([key, value]) => ({
         name: key,
         value: value,
-        color: SEVERITY_COLORS[key] || '#94a3b8',
+        color: SEVERITY_COLORS[key] || '#64748B',
       })).filter(d => d.value > 0)
     : [];
 
@@ -90,21 +92,32 @@ export default function Dashboard() {
       {/* Header Banner */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, color: '#f8fafc', mb: 0.5 }}>
+          <Typography variant="h4" sx={{ fontWeight: 800, color: '#172B4D', mb: 0.5 }}>
             Threat Intelligence Overview
           </Typography>
-          <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+          <Typography variant="body2" sx={{ color: '#64748B' }}>
             Multi-source IOC correlation, telemetry consensus, and proactive vulnerability triage.
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<Search size={18} />}
-          onClick={() => navigate('/investigate')}
-          sx={{ px: 3, py: 1 }}
+        <Tooltip title={isReadOnly ? 'Action restricted: Read-Only Analysts cannot initiate new investigations.' : ''}>
+          <span>
+            <Button
+              variant="contained"
+              disabled={isReadOnly}
+              startIcon={<Search size={18} />}
+              onClick={() => navigate('/investigate')}
+          sx={{
+            bgcolor: '#0891B2',
+            color: '#FFFFFF',
+            px: 3,
+            py: 1,
+            '&:hover': { bgcolor: '#0E7490' },
+          }}
         >
           New Investigation
         </Button>
+          </span>
+        </Tooltip>
       </Box>
 
       {/* Setup Alert Banner if no API keys configured */}
@@ -119,110 +132,99 @@ export default function Dashboard() {
               onClick={() => navigate('/settings')}
               sx={{ fontWeight: 700 }}
             >
-              Configure Keys
+              Configure API Keys
             </Button>
           }
           sx={{
-            bgcolor: 'rgba(245, 158, 11, 0.1)',
-            color: '#fbbf24',
-            border: '1px solid rgba(245, 158, 11, 0.3)',
+            bgcolor: 'rgba(217, 119, 6, 0.08)',
+            border: '1px solid rgba(217, 119, 6, 0.3)',
+            color: '#172B4D',
           }}
         >
-          <strong>API Setup Required:</strong> VirusTotal and AlienVault OTX keys are currently unconfigured.
-          The platform operates in setup mode. Add keys to <code>.env</code> to enable live lookups.
+          <strong>API Keys Not Configured:</strong> ThreatLens AI is currently running in offline mock demonstration mode. Add your free VirusTotal and AlienVault OTX keys in Settings to enable live vendor intelligence.
         </Alert>
       )}
 
-      {error && (
-        <Alert severity="error" sx={{ bgcolor: 'rgba(239, 68, 68, 0.1)', color: '#fca5a5' }}>
-          {error}
-        </Alert>
-      )}
+      {error && <Alert severity="error">{error}</Alert>}
 
-      {/* Stat Cards Row */}
+      {/* KPI Metrics Grid */}
       <Grid container spacing={2.5}>
         <Grid item xs={12} sm={6} md={3}>
           {loading ? (
-            <Skeleton variant="rounded" height={120} sx={{ bgcolor: '#0f172a' }} />
+            <Skeleton variant="rounded" height={130} />
           ) : (
             <StatCard
-              title="Total Investigations"
+              title="Total Ingested IOCs"
               value={stats?.total_investigations || 0}
-              subtitle="Persisted threat scans"
+              subtitle="All historical indicators"
               icon={Layers}
-              accentColor="#00f2fe"
+              accentColor="#0891B2"
             />
           )}
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
           {loading ? (
-            <Skeleton variant="rounded" height={120} sx={{ bgcolor: '#0f172a' }} />
+            <Skeleton variant="rounded" height={130} />
           ) : (
             <StatCard
-              title="Unique Indicators"
-              value={stats?.unique_indicators || 0}
-              subtitle="Distinct IOCs investigated"
-              icon={Search}
-              accentColor="#6366f1"
-            />
-          )}
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          {loading ? (
-            <Skeleton variant="rounded" height={120} sx={{ bgcolor: '#0f172a' }} />
-          ) : (
-            <StatCard
-              title="High & Critical Findings"
-              value={stats?.high_critical_count || 0}
-              subtitle="Actionable threats detected"
+              title="Actionable Threats"
+              value={(stats?.severity_breakdown?.Critical || 0) + (stats?.severity_breakdown?.High || 0)}
+              subtitle="High & Critical severity"
               icon={ShieldAlert}
-              accentColor="#ef4444"
+              accentColor="#DC2626"
             />
           )}
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
           {loading ? (
-            <Skeleton variant="rounded" height={120} sx={{ bgcolor: '#0f172a' }} />
+            <Skeleton variant="rounded" height={130} />
           ) : (
             <StatCard
-              title="Active Intelligence Feeds"
-              value={
-                (stats?.provider_health?.virustotal?.configured ? 1 : 0) +
-                (stats?.provider_health?.alienvault_otx?.configured ? 1 : 0)
-              }
-              subtitle="Out of 2 feeds connected"
+              title="Benign Telemetry"
+              value={stats?.severity_breakdown?.Low || 0}
+              subtitle="Low risk / clean indicators"
+              icon={ShieldCheck}
+              accentColor="#16A34A"
+            />
+          )}
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          {loading ? (
+            <Skeleton variant="rounded" height={130} />
+          ) : (
+            <StatCard
+              title="Suspicious / Moderate"
+              value={stats?.severity_breakdown?.Medium || 0}
+              subtitle="Medium risk warnings"
               icon={Activity}
-              accentColor="#10b981"
+              accentColor="#D97706"
             />
           )}
         </Grid>
       </Grid>
 
-      {/* Analytics Charts Row */}
-      <Grid container spacing={2.5}>
-        {/* Severity Distribution Donut Chart */}
+      {/* Interactive Threat Visualizations */}
+      <Grid container spacing={3}>
+        {/* Severity Breakdown Donut Chart */}
         <Grid item xs={12} md={5}>
-          <Card sx={{ height: '100%', bgcolor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+          <Card sx={{ height: '100%', bgcolor: '#FFFFFF', border: '1px solid #DCE4EE', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)', borderRadius: 2.5 }}>
             <CardContent sx={{ p: 2.8 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#f8fafc', mb: 0.5 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: '#172B4D', mb: 0.5 }}>
                 Severity Breakdown
               </Typography>
-              <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 2 }}>
-                Risk classification based on multi-source scoring consensus
+              <Typography variant="caption" sx={{ color: '#64748B', display: 'block', mb: 2 }}>
+                Distribution of risk levels across archived indicators
               </Typography>
 
               {loading ? (
                 <Skeleton variant="circular" width={180} height={180} sx={{ mx: 'auto', my: 2 }} />
               ) : severityChartData.length === 0 ? (
-                <Box sx={{ py: 6, textAlign: 'center', color: '#64748b' }}>
-                  <Typography variant="body2">No historical investigations recorded yet.</Typography>
+                <Box sx={{ py: 6, textAlign: 'center', color: '#64748B' }}>
+                  <Typography variant="body2">No investigation telemetry yet.</Typography>
                 </Box>
               ) : (
                 <Box sx={{ height: 220, position: 'relative' }}>
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="80%">
                     <PieChart>
                       <Pie
                         data={severityChartData}
@@ -240,10 +242,11 @@ export default function Dashboard() {
                       </Pie>
                       <RechartsTooltip
                         contentStyle={{
-                          backgroundColor: '#080c14',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          backgroundColor: '#FFFFFF',
+                          border: '1px solid #DCE4EE',
                           borderRadius: 8,
-                          color: '#f8fafc',
+                          color: '#172B4D',
+                          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
                         }}
                       />
                     </PieChart>
@@ -253,7 +256,7 @@ export default function Dashboard() {
                     {severityChartData.map((d) => (
                       <Box key={d.name} sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
                         <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: d.color }} />
-                        <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+                        <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>
                           {d.name}: {d.value}
                         </Typography>
                       </Box>
@@ -267,37 +270,38 @@ export default function Dashboard() {
 
         {/* IOC Types Bar Chart */}
         <Grid item xs={12} md={7}>
-          <Card sx={{ height: '100%', bgcolor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+          <Card sx={{ height: '100%', bgcolor: '#FFFFFF', border: '1px solid #DCE4EE', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)', borderRadius: 2.5 }}>
             <CardContent sx={{ p: 2.8 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#f8fafc', mb: 0.5 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: '#172B4D', mb: 0.5 }}>
                 Indicator Type Distribution
               </Typography>
-              <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 2 }}>
+              <Typography variant="caption" sx={{ color: '#64748B', display: 'block', mb: 2 }}>
                 Breakdown of investigated telemetry types (IP, Domain, URL, Hash)
               </Typography>
 
               {loading ? (
                 <Skeleton variant="rounded" height={220} />
               ) : typeChartData.length === 0 ? (
-                <Box sx={{ py: 6, textAlign: 'center', color: '#64748b' }}>
+                <Box sx={{ py: 6, textAlign: 'center', color: '#64748B' }}>
                   <Typography variant="body2">No IOC telemetry logged yet.</Typography>
                 </Box>
               ) : (
                 <Box sx={{ height: 220 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={typeChartData}>
-                      <XAxis dataKey="type" stroke="#64748b" fontSize={11} tickLine={false} />
-                      <YAxis stroke="#64748b" fontSize={11} tickLine={false} allowDecimals={false} />
+                      <XAxis dataKey="type" stroke="#64748B" fontSize={11} tickLine={false} />
+                      <YAxis stroke="#64748B" fontSize={11} tickLine={false} allowDecimals={false} />
                       <RechartsTooltip
-                        cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }}
+                        cursor={{ fill: 'rgba(8, 145, 178, 0.04)' }}
                         contentStyle={{
-                          backgroundColor: '#080c14',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          backgroundColor: '#FFFFFF',
+                          border: '1px solid #DCE4EE',
                           borderRadius: 8,
-                          color: '#f8fafc',
+                          color: '#172B4D',
+                          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
                         }}
                       />
-                      <Bar dataKey="count" fill="#00f2fe" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="count" fill="#0891B2" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </Box>
@@ -308,14 +312,14 @@ export default function Dashboard() {
       </Grid>
 
       {/* Recent Investigations Table */}
-      <Card sx={{ bgcolor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+      <Card sx={{ bgcolor: '#FFFFFF', border: '1px solid #DCE4EE', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)', borderRadius: 2.5 }}>
         <CardContent sx={{ p: 2.8 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#f8fafc' }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: '#172B4D' }}>
                 Recent Investigations
               </Typography>
-              <Typography variant="caption" sx={{ color: '#64748b' }}>
+              <Typography variant="caption" sx={{ color: '#64748B' }}>
                 Latest telemetry queries processed and archived
               </Typography>
             </Box>
@@ -323,7 +327,7 @@ export default function Dashboard() {
               size="small"
               endIcon={<ArrowRight size={14} />}
               onClick={() => navigate('/history')}
-              sx={{ color: '#00f2fe' }}
+              sx={{ color: '#0891B2', fontWeight: 600 }}
             >
               View Full History
             </Button>
@@ -342,19 +346,19 @@ export default function Dashboard() {
             <TableContainer>
               <Table size="small">
                 <TableHead>
-                  <TableRow>
-                    <TableCell>INDICATOR</TableCell>
-                    <TableCell>TYPE</TableCell>
-                    <TableCell>RISK SCORE</TableCell>
-                    <TableCell>SEVERITY</TableCell>
-                    <TableCell>DATE / TIME</TableCell>
-                    <TableCell align="right">ACTION</TableCell>
+                  <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+                    <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>INDICATOR</TableCell>
+                    <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>TYPE</TableCell>
+                    <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>RISK SCORE</TableCell>
+                    <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>SEVERITY</TableCell>
+                    <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>DATE / TIME</TableCell>
+                    <TableCell align="right" sx={{ color: '#64748B', fontWeight: 600 }}>ACTION</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {stats.recent_investigations.map((row) => (
-                    <TableRow key={row.id} hover sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.02)' } }}>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, color: '#f1f5f9' }}>
+                    <TableRow key={row.id} hover sx={{ '&:hover': { bgcolor: '#F8FAFC' } }}>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, color: '#172B4D' }}>
                         {row.normalized_indicator}
                       </TableCell>
                       <TableCell>
@@ -362,22 +366,23 @@ export default function Dashboard() {
                           size="small"
                           label={row.indicator_type.toUpperCase()}
                           sx={{
-                            bgcolor: 'rgba(255, 255, 255, 0.04)',
-                            color: '#94a3b8',
+                            bgcolor: '#F1F5F9',
+                            color: '#64748B',
+                            border: '1px solid #DCE4EE',
                             fontSize: '0.7rem',
                             fontWeight: 600,
                           }}
                         />
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#f8fafc' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#172B4D' }}>
                           {row.risk_score} / 100
                         </Typography>
                       </TableCell>
                       <TableCell>
                         <SeverityBadge severity={row.severity} size="small" />
                       </TableCell>
-                      <TableCell sx={{ color: '#64748b', fontSize: '0.8rem' }}>
+                      <TableCell sx={{ color: '#64748B', fontSize: '0.8rem' }}>
                         {new Date(row.created_at).toLocaleString()}
                       </TableCell>
                       <TableCell align="right">
@@ -389,11 +394,12 @@ export default function Dashboard() {
                             fontSize: '0.75rem',
                             py: 0.3,
                             px: 1.2,
-                            borderColor: 'rgba(255, 255, 255, 0.12)',
-                            color: '#94a3b8',
+                            borderColor: '#DCE4EE',
+                            color: '#172B4D',
                             '&:hover': {
-                              borderColor: '#00f2fe',
-                              color: '#00f2fe',
+                              borderColor: '#0891B2',
+                              color: '#0891B2',
+                              bgcolor: 'rgba(8, 145, 178, 0.04)',
                             },
                           }}
                         >

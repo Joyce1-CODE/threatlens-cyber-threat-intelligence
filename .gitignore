@@ -1,25 +1,51 @@
-# Environment Variables & Secrets
+# Environment files and secrets
 .env
-*.env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+*.env.backup
+*.env.old
+*.env.local.backup
 
-# Python
+# Python & testing caches
 __pycache__/
 *.py[cod]
 *$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+venv
 venv/
+.venv
 .venv/
-threatlens.db
-*.sqlite3
+env
+env/
+ENV
+ENV/
 
-# Node & Frontend
+# Local databases & user data
+*.db
+*.sqlite
+*.sqlite3
+threatlens.db
+
+# Logs
+*.log
+logs/
+
+# Build outputs & frontend dependencies
 node_modules/
 dist/
 dist-ssr/
 *.local
 
-# IDE & OS
+# IDE, OS, and temporary files
 .DS_Store
+Thumbs.db
 .idea/
 .vscode/
+*.swp
+*.swo
+*~

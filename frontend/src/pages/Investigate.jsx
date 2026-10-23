@@ -8,11 +8,10 @@ import {
   CardContent,
   Chip,
   Button,
-  Divider,
   Alert,
   Skeleton,
 } from '@mui/material';
-import { Shield, ArrowRight, Download, ExternalLink, Calendar, Hash, Globe, Lock } from 'lucide-react';
+import { ArrowRight, Download } from 'lucide-react';
 
 import { threatApi } from '../api/client';
 import IOCInputForm from '../components/Investigation/IOCInputForm';
@@ -29,7 +28,6 @@ export default function Investigate() {
   const [result, setResult] = useState(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
-  
   const handleDownloadPDF = async () => {
     if (!result) return;
     try {
@@ -72,10 +70,10 @@ export default function Investigate() {
       {loading && (
         <Grid container spacing={3}>
           <Grid item xs={12} md={4}>
-            <Skeleton variant="rounded" height={280} sx={{ bgcolor: '#0f172a' }} />
+            <Skeleton variant="rounded" height={280} sx={{ bgcolor: '#E2E8F0' }} />
           </Grid>
           <Grid item xs={12} md={8}>
-            <Skeleton variant="rounded" height={280} sx={{ bgcolor: '#0f172a' }} />
+            <Skeleton variant="rounded" height={280} sx={{ bgcolor: '#E2E8F0' }} />
           </Grid>
         </Grid>
       )}
@@ -86,9 +84,10 @@ export default function Investigate() {
           {/* Result Banner */}
           <Card
             sx={{
-              bgcolor: '#0f172a',
-              border: '1px solid rgba(0, 242, 254, 0.25)',
-              boxShadow: '0 0 20px rgba(0, 242, 254, 0.08)',
+              bgcolor: '#FFFFFF',
+              border: '1px solid #DCE4EE',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+              borderRadius: 2.5,
             }}
           >
             <CardContent sx={{ p: 3 }}>
@@ -99,9 +98,9 @@ export default function Investigate() {
                       size="small"
                       label={result.indicator_type.toUpperCase()}
                       sx={{
-                        bgcolor: 'rgba(0, 242, 254, 0.1)',
-                        color: '#00f2fe',
-                        border: '1px solid rgba(0, 242, 254, 0.3)',
+                        bgcolor: 'rgba(8, 145, 178, 0.08)',
+                        color: '#0891B2',
+                        border: '1px solid rgba(8, 145, 178, 0.25)',
                         fontWeight: 700,
                         fontSize: '0.75rem',
                       }}
@@ -110,7 +109,7 @@ export default function Investigate() {
                       variant="h5"
                       sx={{
                         fontWeight: 800,
-                        color: '#f8fafc',
+                        color: '#172B4D',
                         fontFamily: "'JetBrains Mono', monospace",
                         wordBreak: 'break-all',
                       }}
@@ -118,8 +117,8 @@ export default function Investigate() {
                       {result.normalized_indicator}
                     </Typography>
                   </Box>
-                  <Typography variant="caption" sx={{ color: '#64748b' }}>
-                    Data Coverage: <strong style={{ color: '#94a3b8' }}>{result.data_coverage}</strong> • Queried at{' '}
+                  <Typography variant="caption" sx={{ color: '#64748B' }}>
+                    Data Coverage: <strong style={{ color: '#172B4D' }}>{result.data_coverage}</strong> • Queried at{' '}
                     {new Date(result.created_at).toLocaleString()}
                   </Typography>
                 </Box>
@@ -131,7 +130,12 @@ export default function Investigate() {
                     disabled={downloadingPdf}
                     startIcon={<Download size={14} />}
                     onClick={handleDownloadPDF}
-                    sx={{ px: 2 }}
+                    sx={{
+                      px: 2,
+                      bgcolor: '#0891B2',
+                      color: '#FFFFFF',
+                      '&:hover': { bgcolor: '#0E7490' },
+                    }}
                   >
                     {downloadingPdf ? 'Generating PDF...' : 'Download PDF Report'}
                   </Button>
@@ -140,7 +144,11 @@ export default function Investigate() {
                     size="small"
                     endIcon={<ArrowRight size={14} />}
                     onClick={() => navigate(`/investigation/${result.id}`)}
-                    sx={{ borderColor: 'rgba(255, 255, 255, 0.2)', color: '#f8fafc' }}
+                    sx={{
+                      borderColor: '#DCE4EE',
+                      color: '#172B4D',
+                      '&:hover': { borderColor: '#0891B2', color: '#0891B2' },
+                    }}
                   >
                     View Details
                   </Button>
@@ -149,11 +157,17 @@ export default function Investigate() {
 
               {/* Verdict Summary Callout */}
               <Alert
-                severity={result.severity === 'Critical' || result.severity === 'High' ? 'error' : result.severity === 'Medium' ? 'warning' : 'success'}
+                severity={
+                  result.severity === 'Critical' || result.severity === 'High'
+                    ? 'error'
+                    : result.severity === 'Medium'
+                    ? 'warning'
+                    : result.severity === 'Unknown' || result.severity === 'Unverified' || result.confidence === 'None'
+                    ? 'info'
+                    : 'success'
+                }
                 sx={{
-                  bgcolor: 'rgba(0, 0, 0, 0.25)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  color: '#f1f5f9',
+                  border: '1px solid #DCE4EE',
                   '& .MuiAlert-icon': { mt: 0.2 },
                 }}
               >
@@ -180,7 +194,7 @@ export default function Investigate() {
 
           {/* Provider Findings Cards */}
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#f8fafc', mb: 1.5 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: '#172B4D', mb: 1.5 }}>
               Provider Intelligence Findings
             </Typography>
             <Grid container spacing={3}>

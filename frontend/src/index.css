@@ -1,5 +1,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
+:root {
+  --bg-main: #F5F7FB;
+  --bg-card: #FFFFFF;
+  --bg-sidebar: #EDF2F8;
+  --text-primary: #172B4D;
+  --text-secondary: #64748B;
+  --border-color: #DCE4EE;
+  --accent-primary: #0891B2;
+  --accent-hover: #0E7490;
+  --risk-low: #16A34A;
+  --risk-medium: #D97706;
+  --risk-high: #EA580C;
+  --risk-critical: #DC2626;
+  --risk-unknown: #64748B;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -8,8 +24,8 @@
 
 body {
   margin: 0;
-  background-color: #080c14;
-  color: #f1f5f9;
+  background-color: #F5F7FB;
+  color: #172B4D;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -25,26 +41,26 @@ code, pre, .mono-font {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #080c14;
+  background: #F5F7FB;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #CBD5E1;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #94A3B8;
 }
 
-/* Subtle glow effects */
-.cyber-glow {
-  box-shadow: 0 0 20px rgba(0, 242, 254, 0.15);
+/* Enterprise SOC Panels & Cards */
+.soc-card {
+  background-color: #FFFFFF;
+  border: 1px solid #DCE4EE;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 }
 
-.cyber-border {
-  border: 1px solid rgba(0, 242, 254, 0.2) !important;
-}
-
-.cyber-grid-bg {
-  background-image: radial-gradient(rgba(0, 242, 254, 0.05) 1px, transparent 1px);
-  background-size: 24px 24px;
+.soc-panel {
+  background-color: #F8FAFC;
+  border: 1px solid #DCE4EE;
+  border-radius: 8px;
 }

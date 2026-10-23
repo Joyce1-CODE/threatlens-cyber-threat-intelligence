@@ -1,28 +1,15 @@
 import pytest
 from datetime import datetime, timezone
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
-from app.database import Base, get_db
 from app.models import Investigation
 from app.main import app
 from app.services.pdf_generator import generate_threat_report_pdf
+try:
+    from tests.conftest import TestingSessionLocal, make_auth_headers
+except ImportError:
+    from backend.tests.conftest import TestingSessionLocal, make_auth_headers
 
-TEST_DATABASE_URL = "sqlite:///:memory:"
-engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False}, poolclass=StaticPool)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base.metadata.create_all(bind=engine)
-
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 def test_generate_pdf_report_bytes():
@@ -126,7 +113,8 @@ def test_pdf_endpoint_success_and_headers():
     db.commit()
     db.close()
 
-    res = client.get("/api/investigations/pdf-download-id-1/report.pdf")
+    headers = make_auth_headers()
+    res = client.get("/api/investigations/pdf-download-id-1/report.pdf", headers=headers)
     assert res.status_code == 200
     assert res.headers["content-type"] == "application/pdf"
     assert "attachment" in res.headers["content-disposition"]
@@ -134,6 +122,7 @@ def test_pdf_endpoint_success_and_headers():
     assert res.content.startswith(b"%PDF")
 
 def test_pdf_endpoint_not_found_returns_404():
-    res = client.get("/api/investigations/non-existent-id/report.pdf")
+    headers = make_auth_headers()
+    res = client.get("/api/investigations/non-existent-id/report.pdf", headers=headers)
     assert res.status_code == 404
     assert "not found" in res.json()["detail"].lower()

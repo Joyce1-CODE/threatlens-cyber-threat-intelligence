@@ -15,7 +15,7 @@ def test_ipv4_validation():
     normalized, ioc_type = validate_and_normalize_ioc("8.8.8.8")
     assert normalized == "8.8.8.8"
     assert ioc_type == "ipv4"
-    
+
     # Defanged IPv4
     norm_defanged, t = validate_and_normalize_ioc("1[.]1[.]1[.]1")
     assert norm_defanged == "1.1.1.1"

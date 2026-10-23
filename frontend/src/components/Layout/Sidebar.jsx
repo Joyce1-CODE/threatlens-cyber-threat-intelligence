@@ -1,35 +1,41 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Box, Typography, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider } from '@mui/material';
-import { LayoutDashboard, Search, Layers, History, Settings, ShieldCheck, Activity } from 'lucide-react';
+import { LayoutDashboard, Search, Layers, History, Settings, ShieldCheck, Activity, Users } from 'lucide-react';
 import { threatApi } from '../../api/client';
 import ProviderStatusBadge from '../Common/ProviderStatusBadge';
-
-const navItems = [
-  { label: 'Overview', path: '/', icon: LayoutDashboard },
-  { label: 'Investigate', path: '/investigate', icon: Search },
-  { label: 'Bulk Triage', path: '/bulk', icon: Layers },
-  { label: 'History', path: '/history', icon: History },
-  { label: 'Settings', path: '/settings', icon: Settings },
-];
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function Sidebar({ width = 260 }) {
   const location = useLocation();
+  const { user, isAdmin } = useAuth();
   const [providers, setProviders] = useState(null);
 
   useEffect(() => {
-    threatApi.getProviderStatus()
-      .then(data => setProviders(data.providers))
-      .catch(() => {});
-  }, [location.pathname]);
+    // Only attempt fetch if user is authenticated to avoid 401s during transitions
+    if (user) {
+      threatApi.getProviderStatus()
+        .then(data => setProviders(data.providers))
+        .catch(() => {});
+    }
+  }, [location.pathname, user]);
+
+  const navItems = [
+    { label: 'Overview', path: '/', icon: LayoutDashboard },
+    { label: 'Investigate', path: '/investigate', icon: Search },
+    { label: 'Bulk Triage', path: '/bulk', icon: Layers },
+    { label: 'History', path: '/history', icon: History },
+    ...(isAdmin ? [{ label: 'User Accounts', path: '/users', icon: Users }] : []),
+    { label: 'Settings', path: '/settings', icon: Settings },
+  ];
 
   return (
     <Box
       sx={{
         width,
         height: '100vh',
-        bgcolor: '#090e1a',
-        borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+        bgcolor: '#EDF2F8',
+        borderRight: '1px solid #DCE4EE',
         display: 'flex',
         flexDirection: 'column',
         position: 'fixed',
@@ -45,33 +51,33 @@ export default function Sidebar({ width = 260 }) {
             width: 38,
             height: 38,
             borderRadius: 2,
-            background: 'linear-gradient(135deg, #00f2fe 0%, #0284c7 100%)',
+            bgcolor: '#0891B2',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#080c14',
-            boxShadow: '0 0 15px rgba(0, 242, 254, 0.4)',
+            color: '#FFFFFF',
+            boxShadow: '0 2px 8px rgba(8, 145, 178, 0.25)',
           }}
         >
-          <ShieldCheck size={22} strokeWidth={2.5} />
+          <ShieldCheck size={22} strokeWidth={2.4} />
         </Box>
         <Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#f8fafc', lineHeight: 1.2 }}>
-            ThreatLens <span style={{ color: '#00f2fe' }}>AI</span>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#172B4D', lineHeight: 1.2 }}>
+            ThreatLens <span style={{ color: '#0891B2' }}>AI</span>
           </Typography>
-          <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.7rem', fontWeight: 600 }}>
+          <Typography variant="caption" sx={{ color: '#64748B', fontSize: '0.7rem', fontWeight: 600 }}>
             CYBER THREAT INTEL
           </Typography>
         </Box>
       </Box>
 
-      <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.06)' }} />
+      <Divider sx={{ borderColor: '#DCE4EE' }} />
 
       {/* Navigation Links */}
       <Box sx={{ flex: 1, py: 2 }}>
         <Typography
           variant="caption"
-          sx={{ px: 3, mb: 1, display: 'block', color: '#475569', fontWeight: 700, letterSpacing: '0.05em' }}
+          sx={{ px: 3, mb: 1, display: 'block', color: '#64748B', fontWeight: 700, letterSpacing: '0.05em' }}
         >
           NAVIGATION
         </Typography>
@@ -90,16 +96,16 @@ export default function Sidebar({ width = 260 }) {
                     borderRadius: 2,
                     py: 1,
                     px: 1.8,
-                    bgcolor: isActive ? 'rgba(0, 242, 254, 0.08)' : 'transparent',
-                    border: isActive ? '1px solid rgba(0, 242, 254, 0.25)' : '1px solid transparent',
-                    color: isActive ? '#00f2fe' : '#94a3b8',
+                    bgcolor: isActive ? 'rgba(8, 145, 178, 0.1)' : 'transparent',
+                    border: isActive ? '1px solid rgba(8, 145, 178, 0.3)' : '1px solid transparent',
+                    color: isActive ? '#0891B2' : '#64748B',
                     '&:hover': {
-                      bgcolor: 'rgba(255, 255, 255, 0.04)',
-                      color: '#f8fafc',
+                      bgcolor: isActive ? 'rgba(8, 145, 178, 0.14)' : '#E2E8F0',
+                      color: isActive ? '#0891B2' : '#172B4D',
                     },
                   }}
                 >
-                  <ListItemIcon sx={{ minWidth: 36, color: isActive ? '#00f2fe' : '#64748b' }}>
+                  <ListItemIcon sx={{ minWidth: 36, color: isActive ? '#0891B2' : '#64748B' }}>
                     <Icon size={18} />
                   </ListItemIcon>
                   <ListItemText
@@ -117,10 +123,10 @@ export default function Sidebar({ width = 260 }) {
       </Box>
 
       {/* Intelligence Source Status Footer */}
-      <Box sx={{ p: 2, m: 1.5, bgcolor: 'rgba(15, 23, 42, 0.6)', borderRadius: 2, border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+      <Box sx={{ p: 2, m: 1.5, bgcolor: '#FFFFFF', borderRadius: 2, border: '1px solid #DCE4EE', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.2 }}>
-          <Activity size={14} color="#00f2fe" />
-          <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700 }}>
+          <Activity size={15} color="#0891B2" />
+          <Typography variant="caption" sx={{ color: '#172B4D', fontWeight: 700 }}>
             INTELLIGENCE FEEDS
           </Typography>
         </Box>

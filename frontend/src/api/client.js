@@ -1,20 +1,158 @@
 import axios from 'axios';
 
+// In-memory token storage (never in localStorage to prevent XSS exfiltration)
+let inMemoryAccessToken = null;
+
+export const setAccessToken = (token) => {
+  inMemoryAccessToken = token;
+};
+
+export const getAccessToken = () => inMemoryAccessToken;
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 45000,
+  withCredentials: true, // Enables sending and receiving httpOnly refresh cookies
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
+// Attach Authorization Bearer token to all outgoing requests if token is present
+api.interceptors.request.use(
+  (config) => {
+    if (inMemoryAccessToken && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${inMemoryAccessToken}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor: automatically refresh on 401
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // If request failed with 401 and was NOT an auth endpoint
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !originalRequest.url.includes('/auth/login') &&
+      !originalRequest.url.includes('/auth/refresh') &&
+      !originalRequest.url.includes('/auth/logout')
+    ) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const refreshRes = await api.post('/auth/refresh');
+        const newToken = refreshRes.data.access_token;
+        setAccessToken(newToken);
+        processQueue(null, newToken);
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return api(originalRequest);
+      } catch (refreshErr) {
+        processQueue(refreshErr, null);
+        setAccessToken(null);
+        // Dispatch custom session-expired event
+        window.dispatchEvent(new CustomEvent('threatlens:session_expired'));
+        return Promise.reject(refreshErr);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 export const threatApi = {
+  // Authentication
+  login: async (username, password) => {
+    const res = await api.post('/auth/login', { username, password });
+    if (res.data && res.data.access_token) {
+      setAccessToken(res.data.access_token);
+    }
+    return res.data;
+  },
+
+  refresh: async () => {
+    const res = await api.post('/auth/refresh');
+    if (res.data && res.data.access_token) {
+      setAccessToken(res.data.access_token);
+    }
+    return res.data;
+  },
+
+  logout: async () => {
+    try {
+      await api.post('/auth/logout');
+    } finally {
+      setAccessToken(null);
+    }
+  },
+
+  getMe: async () => {
+    const res = await api.get('/auth/me');
+    return res.data;
+  },
+
+  // User Management (Admin Only)
+  getUsers: async () => {
+    const res = await api.get('/users');
+    return res.data;
+  },
+
+  createUser: async (userData) => {
+    const res = await api.post('/users', userData);
+    return res.data;
+  },
+
+  updateUser: async (userId, userData) => {
+    const res = await api.patch(`/users/${userId}`, userData);
+    return res.data;
+  },
+
+  deleteUser: async (userId) => {
+    const res = await api.delete(`/users/${userId}`);
+    return res.data;
+  },
+
   // Health & Providers
   getHealth: async () => {
     const res = await api.get('/health');
     return res.data;
   },
-  
+
   getProviderStatus: async () => {
     const res = await api.get('/providers/status');
     return res.data;
@@ -56,8 +194,7 @@ export const threatApi = {
     const res = await api.get(`/investigations/${investigationId}/report.pdf`, {
       responseType: 'blob',
     });
-    
-    // Extract filename from Content-Disposition if present
+
     let filename = fallbackFilename;
     const disposition = res.headers['content-disposition'];
     if (disposition && disposition.includes('filename=')) {

@@ -13,16 +13,16 @@ def test_risk_scoring_no_providers_configured():
         status="missing_key",
         summary="Key not configured"
     )
-    
+
     result = RiskScoringEngine.calculate_risk(
         indicator="1.1.1.1",
         indicator_type="ipv4",
         vt_result=vt_unconf,
         otx_result=otx_unconf
     )
-    
+
     assert result["risk_score"] == 0
-    assert result["severity"] == "Low"
+    assert result["severity"] == "Unknown"
     assert result["confidence"] == "None"
     assert "Unverified" in result["data_coverage"]
 
@@ -40,14 +40,14 @@ def test_risk_scoring_clean_reputation():
         is_malicious=False,
         detections=0
     )
-    
+
     result = RiskScoringEngine.calculate_risk(
         indicator="8.8.8.8",
         indicator_type="ipv4",
         vt_result=vt_clean,
         otx_result=otx_clean
     )
-    
+
     assert result["risk_score"] == 0
     assert result["severity"] == "Low"
     assert result["confidence"] == "High"
@@ -68,14 +68,14 @@ def test_risk_scoring_critical_malicious_with_synergy():
         detections=6,
         attributes={"malware_families": ["RedLine Stealer"], "adversaries": ["APT29"]}
     )
-    
+
     result = RiskScoringEngine.calculate_risk(
         indicator="malicious-c2.xyz",
         indicator_type="domain",
         vt_result=vt_malicious,
         otx_result=otx_malicious
     )
-    
+
     assert result["risk_score"] >= 85
     assert result["severity"] == "Critical"
     assert result["confidence"] == "High"
@@ -95,13 +95,13 @@ def test_missing_data_does_not_count_as_clean():
         provider_name="AlienVault OTX",
         status="missing_key"
     )
-    
+
     result = RiskScoringEngine.calculate_risk(
         indicator="example.com",
         indicator_type="domain",
         vt_result=vt_clean,
         otx_result=otx_missing
     )
-    
+
     assert result["confidence"] == "Medium"
     assert "Partial" in result["data_coverage"]

@@ -2,27 +2,14 @@ import io
 import pytest
 from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
-from app.database import Base, get_db
 from app.main import app
 from app.services.bulk_service import BulkService, BulkServiceError
+try:
+    from tests.conftest import TestingSessionLocal, make_auth_headers
+except ImportError:
+    from backend.tests.conftest import TestingSessionLocal, make_auth_headers
 
-TEST_DATABASE_URL = "sqlite:///:memory:"
-engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False}, poolclass=StaticPool)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base.metadata.create_all(bind=engine)
-
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 def test_csv_preview_valid():
@@ -43,7 +30,7 @@ def test_csv_preview_with_invalid_and_duplicates():
     assert preview["valid_count"] == 2 # 8.8.8.8 and ipv6
     assert preview["duplicate_count"] == 1 # Second 8.8.8.8
     assert preview["invalid_count"] == 1 # not_valid_indicator!!!
-    
+
     invalid_item = next(it for it in preview["items"] if not it["is_valid"])
     assert invalid_item["error"] is not None
 
@@ -52,29 +39,32 @@ def test_csv_preview_rejects_empty():
         BulkService.preview_csv_content(b"", "empty.csv")
 
 def test_csv_preview_endpoint():
+    headers = make_auth_headers()
     csv_content = b"indicator\n198.51.100.1\n93.184.216.34\n"
     files = {"file": ("test_iocs.csv", csv_content, "text/csv")}
-    res = client.post("/api/bulk/preview", files=files)
+    res = client.post("/api/bulk/preview", files=files, headers=headers)
     assert res.status_code == 200
     data = res.json()
     assert data["valid_count"] == 2
     assert data["filename"] == "test_iocs.csv"
 
 def test_csv_preview_endpoint_rejects_non_csv():
+    headers = make_auth_headers()
     files = {"file": ("malware.exe", b"MZ...", "application/octet-stream")}
-    res = client.post("/api/bulk/preview", files=files)
+    res = client.post("/api/bulk/preview", files=files, headers=headers)
     assert res.status_code == 400
     assert "unsupported" in res.json()["detail"].lower()
 
 @pytest.mark.asyncio
 async def test_bulk_triage_execution_and_persistence():
+    headers = make_auth_headers()
     payload = {
         "items": [
             {"indicator": "8.8.8.8", "indicator_type": "ipv4"},
             {"indicator": "invalid...syntax", "indicator_type": "auto"}
         ]
     }
-    res = client.post("/api/bulk/triage", json=payload)
+    res = client.post("/api/bulk/triage", json=payload, headers=headers)
     assert res.status_code == 200
     data = res.json()
     assert data["total_submitted"] == 2
@@ -91,6 +81,7 @@ async def test_bulk_triage_execution_and_persistence():
     assert "Validation Error" in invalid_res["verdict_summary"]
 
 def test_bulk_export_csv():
+    headers = make_auth_headers()
     mock_results = [
         {
             "id": "exp-1",
@@ -110,7 +101,7 @@ def test_bulk_export_csv():
             "created_at": "2026-10-22T10:00:00",
         }
     ]
-    res = client.post("/api/bulk/export", json={"results": mock_results})
+    res = client.post("/api/bulk/export", json={"results": mock_results}, headers=headers)
     assert res.status_code == 200
     assert res.headers["content-type"] == "text/csv; charset=utf-8"
     assert "attachment" in res.headers["content-disposition"]

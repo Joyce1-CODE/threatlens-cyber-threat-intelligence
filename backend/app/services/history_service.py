@@ -52,30 +52,30 @@ class HistoryService:
         severity: Optional[str] = None
     ) -> PaginatedInvestigationResponse:
         query = db.query(Investigation)
-        
+
         if search:
             search_clean = f"%{search.strip()}%"
             query = query.filter(
                 (Investigation.indicator.ilike(search_clean)) |
                 (Investigation.normalized_indicator.ilike(search_clean))
             )
-            
+
         if indicator_type and indicator_type.lower() != "all":
             query = query.filter(Investigation.indicator_type == indicator_type.lower())
-            
+
         if severity and severity.lower() != "all":
             query = query.filter(Investigation.severity.ilike(severity))
-            
+
         total = query.count()
         total_pages = max(1, (total + page_size - 1) // page_size)
-        
+
         records = (
             query.order_by(desc(Investigation.created_at))
             .offset((page - 1) * page_size)
             .limit(page_size)
             .all()
         )
-        
+
         items = [
             InvestigationListItem(
                 id=rec.id,
@@ -93,7 +93,7 @@ class HistoryService:
             )
             for rec in records
         ]
-        
+
         return PaginatedInvestigationResponse(
             total=total,
             page=page,
@@ -115,12 +115,12 @@ class HistoryService:
     def get_dashboard_stats(db: Session, provider_health: Dict[str, Any]) -> DashboardStatsResponse:
         total = db.query(func.count(Investigation.id)).scalar() or 0
         unique = db.query(func.count(distinct(Investigation.normalized_indicator))).scalar() or 0
-        
+
         # High and Critical count
         high_crit = db.query(func.count(Investigation.id)).filter(
             Investigation.severity.in_(["High", "Critical"])
         ).scalar() or 0
-        
+
         # Severity breakdown
         severities = ["Low", "Medium", "High", "Critical"]
         sev_counts = {}
@@ -129,7 +129,7 @@ class HistoryService:
                 Investigation.severity.ilike(s)
             ).scalar() or 0
             sev_counts[s] = count
-            
+
         # Indicator type breakdown
         types = ["ipv4", "ipv6", "domain", "url", "md5", "sha1", "sha256"]
         type_counts = {}
@@ -138,7 +138,7 @@ class HistoryService:
                 Investigation.indicator_type == t
             ).scalar() or 0
             type_counts[t] = count
-            
+
         # Recent 5 investigations
         recent_records = (
             db.query(Investigation)
@@ -146,7 +146,7 @@ class HistoryService:
             .limit(5)
             .all()
         )
-        
+
         recent_items = [
             InvestigationListItem(
                 id=rec.id,
@@ -164,11 +164,11 @@ class HistoryService:
             )
             for rec in recent_records
         ]
-        
+
         health_objs = {
             k: ProviderStatus(**v) for k, v in provider_health.items()
         }
-        
+
         return DashboardStatsResponse(
             total_investigations=total,
             unique_indicators=unique,

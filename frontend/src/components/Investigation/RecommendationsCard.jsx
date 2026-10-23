@@ -6,18 +6,21 @@ export default function RecommendationsCard({ recommendations = [], severity = '
   if (!recommendations || recommendations.length === 0) return null;
 
   const isHighRisk = severity === 'Critical' || severity === 'High';
+  const accentColor = isHighRisk ? '#EA580C' : '#16A34A';
 
   return (
     <Card
       sx={{
-        bgcolor: '#0f172a',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        bgcolor: '#FFFFFF',
+        border: '1px solid #DCE4EE',
+        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+        borderRadius: 2.5,
       }}
     >
       <CardContent sx={{ p: 2.8 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 2 }}>
-          <ShieldCheck size={20} color={isHighRisk ? '#f97316' : '#10b981'} />
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#f8fafc' }}>
+          <ShieldCheck size={20} color={accentColor} />
+          <Typography variant="h6" sx={{ fontWeight: 700, color: '#172B4D' }}>
             Actionable Mitigation Guidance
           </Typography>
         </Box>
@@ -28,19 +31,19 @@ export default function RecommendationsCard({ recommendations = [], severity = '
               key={idx}
               disableGutters
               sx={{
-                py: 1,
+                py: 1.2,
                 alignItems: 'flex-start',
-                borderBottom: idx < recommendations.length - 1 ? '1px solid rgba(255, 255, 255, 0.04)' : 'none',
+                borderBottom: idx < recommendations.length - 1 ? '1px solid #DCE4EE' : 'none',
               }}
             >
-              <ListItemIcon sx={{ minWidth: 28, mt: 0.4, color: isHighRisk ? '#f97316' : '#10b981' }}>
+              <ListItemIcon sx={{ minWidth: 28, mt: 0.4, color: accentColor }}>
                 <CheckCircle2 size={16} />
               </ListItemIcon>
               <ListItemText
                 primary={rec}
                 primaryTypographyProps={{
                   variant: 'body2',
-                  sx: { color: '#cbd5e1', lineHeight: 1.5, fontWeight: 500 },
+                  sx: { color: '#172B4D', lineHeight: 1.5, fontWeight: 500 },
                 }}
               />
             </ListItem>

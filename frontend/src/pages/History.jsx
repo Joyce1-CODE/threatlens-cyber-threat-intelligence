@@ -21,13 +21,15 @@ import {
   Skeleton,
   Alert,
 } from '@mui/material';
-import { Search, Eye, Trash2, Filter, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Search, Eye, Trash2 } from 'lucide-react';
 
 import { threatApi } from '../api/client';
+import { useAuth } from '../contexts/AuthContext';
 import SeverityBadge from '../components/Common/SeverityBadge';
 import EmptyState from '../components/Common/EmptyState';
 
 export default function History() {
+  const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
@@ -88,10 +90,10 @@ export default function History() {
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, color: '#f8fafc', mb: 0.5 }}>
+          <Typography variant="h4" sx={{ fontWeight: 800, color: '#172B4D', mb: 0.5 }}>
             Investigation History
           </Typography>
-          <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+          <Typography variant="body2" sx={{ color: '#64748B' }}>
             Archived threat intelligence queries, evidence signals, and score audits ({total} total records).
           </Typography>
         </Box>
@@ -99,19 +101,24 @@ export default function History() {
           variant="contained"
           onClick={() => navigate('/investigate')}
           startIcon={<Search size={16} />}
+          sx={{
+            bgcolor: '#0891B2',
+            color: '#FFFFFF',
+            '&:hover': { bgcolor: '#0E7490' },
+          }}
         >
           New Investigation
         </Button>
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ bgcolor: 'rgba(239, 68, 68, 0.1)', color: '#fca5a5' }}>
+        <Alert severity="error" sx={{ bgcolor: 'rgba(220, 38, 38, 0.08)', color: '#DC2626', border: '1px solid rgba(220, 38, 38, 0.2)' }}>
           {error}
         </Alert>
       )}
 
       {/* Filter and Search Bar */}
-      <Card sx={{ bgcolor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+      <Card sx={{ bgcolor: '#FFFFFF', border: '1px solid #DCE4EE', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)', borderRadius: 2.5 }}>
         <CardContent sx={{ p: 2.5 }}>
           <Box
             component="form"
@@ -126,9 +133,13 @@ export default function History() {
               onChange={(e) => setSearch(e.target.value)}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  bgcolor: '#080c14',
+                  bgcolor: '#FFFFFF',
                   fontFamily: "'JetBrains Mono', monospace",
                   fontSize: '0.9rem',
+                  color: '#172B4D',
+                  '& fieldset': { borderColor: '#DCE4EE' },
+                  '&:hover fieldset': { borderColor: '#0891B2' },
+                  '&.Mui-focused fieldset': { borderColor: '#0891B2' },
                 },
               }}
             />
@@ -141,7 +152,16 @@ export default function History() {
                 setTypeFilter(e.target.value);
                 setPage(1);
               }}
-              sx={{ minWidth: 150, '& .MuiOutlinedInput-root': { bgcolor: '#080c14' } }}
+              sx={{
+                minWidth: 150,
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: '#FFFFFF',
+                  color: '#172B4D',
+                  '& fieldset': { borderColor: '#DCE4EE' },
+                  '&:hover fieldset': { borderColor: '#0891B2' },
+                  '&.Mui-focused fieldset': { borderColor: '#0891B2' },
+                },
+              }}
             >
               <MenuItem value="all">All Types</MenuItem>
               <MenuItem value="ipv4">IPv4</MenuItem>
@@ -161,7 +181,16 @@ export default function History() {
                 setSeverityFilter(e.target.value);
                 setPage(1);
               }}
-              sx={{ minWidth: 150, '& .MuiOutlinedInput-root': { bgcolor: '#080c14' } }}
+              sx={{
+                minWidth: 150,
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: '#FFFFFF',
+                  color: '#172B4D',
+                  '& fieldset': { borderColor: '#DCE4EE' },
+                  '&:hover fieldset': { borderColor: '#0891B2' },
+                  '&.Mui-focused fieldset': { borderColor: '#0891B2' },
+                },
+              }}
             >
               <MenuItem value="all">All Severities</MenuItem>
               <MenuItem value="Low">Low Risk</MenuItem>
@@ -174,11 +203,12 @@ export default function History() {
               type="submit"
               variant="outlined"
               sx={{
-                borderColor: 'rgba(0, 242, 254, 0.3)',
-                color: '#00f2fe',
+                borderColor: '#0891B2',
+                color: '#0891B2',
                 minWidth: 100,
                 py: 0.9,
-                '&:hover': { borderColor: '#00f2fe' },
+                fontWeight: 600,
+                '&:hover': { bgcolor: 'rgba(8, 145, 178, 0.06)' },
               }}
             >
               Search
@@ -188,7 +218,7 @@ export default function History() {
       </Card>
 
       {/* History Table */}
-      <Card sx={{ bgcolor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+      <Card sx={{ bgcolor: '#FFFFFF', border: '1px solid #DCE4EE', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)', borderRadius: 2.5 }}>
         <CardContent sx={{ p: 0 }}>
           {loading ? (
             <Box sx={{ p: 3 }}>
@@ -207,14 +237,14 @@ export default function History() {
             <TableContainer>
               <Table>
                 <TableHead>
-                  <TableRow>
-                    <TableCell>INDICATOR</TableCell>
-                    <TableCell>TYPE</TableCell>
-                    <TableCell>RISK SCORE</TableCell>
-                    <TableCell>SEVERITY</TableCell>
-                    <TableCell>PROVIDERS</TableCell>
-                    <TableCell>TIMESTAMP</TableCell>
-                    <TableCell align="right">ACTIONS</TableCell>
+                  <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+                    <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>INDICATOR</TableCell>
+                    <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>TYPE</TableCell>
+                    <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>RISK SCORE</TableCell>
+                    <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>SEVERITY</TableCell>
+                    <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>PROVIDERS</TableCell>
+                    <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>TIMESTAMP</TableCell>
+                    <TableCell align="right" sx={{ color: '#64748B', fontWeight: 600 }}>ACTIONS</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -223,9 +253,9 @@ export default function History() {
                       key={row.id}
                       hover
                       onClick={() => navigate(`/investigation/${row.id}`)}
-                      sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.02)' } }}
+                      sx={{ cursor: 'pointer', '&:hover': { bgcolor: '#F8FAFC' } }}
                     >
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, color: '#f8fafc' }}>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, color: '#172B4D' }}>
                         {row.normalized_indicator}
                       </TableCell>
                       <TableCell>
@@ -233,15 +263,16 @@ export default function History() {
                           size="small"
                           label={row.indicator_type.toUpperCase()}
                           sx={{
-                            bgcolor: 'rgba(255, 255, 255, 0.04)',
-                            color: '#94a3b8',
+                            bgcolor: '#F1F5F9',
+                            color: '#64748B',
+                            border: '1px solid #DCE4EE',
                             fontSize: '0.7rem',
                             fontWeight: 600,
                           }}
                         />
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#f1f5f9' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#172B4D' }}>
                           {row.risk_score} / 100
                         </Typography>
                       </TableCell>
@@ -254,23 +285,27 @@ export default function History() {
                             size="small"
                             label={`VT: ${row.vt_detections}`}
                             sx={{
-                              bgcolor: row.vt_detections > 0 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.04)',
-                              color: row.vt_detections > 0 ? '#ef4444' : '#94a3b8',
+                              bgcolor: row.vt_detections > 0 ? 'rgba(220, 38, 38, 0.08)' : '#F1F5F9',
+                              color: row.vt_detections > 0 ? '#DC2626' : '#64748B',
+                              border: '1px solid #DCE4EE',
                               fontSize: '0.68rem',
+                              fontWeight: 600,
                             }}
                           />
                           <Chip
                             size="small"
                             label={`OTX: ${row.otx_pulse_count}`}
                             sx={{
-                              bgcolor: row.otx_pulse_count > 0 ? 'rgba(168, 85, 247, 0.15)' : 'rgba(255, 255, 255, 0.04)',
-                              color: row.otx_pulse_count > 0 ? '#c084fc' : '#94a3b8',
+                              bgcolor: row.otx_pulse_count > 0 ? 'rgba(79, 70, 229, 0.08)' : '#F1F5F9',
+                              color: row.otx_pulse_count > 0 ? '#4F46E5' : '#64748B',
+                              border: '1px solid #DCE4EE',
                               fontSize: '0.68rem',
+                              fontWeight: 600,
                             }}
                           />
                         </Box>
                       </TableCell>
-                      <TableCell sx={{ color: '#64748b', fontSize: '0.8rem' }}>
+                      <TableCell sx={{ color: '#64748B', fontSize: '0.8rem' }}>
                         {new Date(row.created_at).toLocaleString()}
                       </TableCell>
                       <TableCell align="right">
@@ -282,20 +317,22 @@ export default function History() {
                                 e.stopPropagation();
                                 navigate(`/investigation/${row.id}`);
                               }}
-                              sx={{ color: '#00f2fe' }}
+                              sx={{ color: '#0891B2', '&:hover': { bgcolor: 'rgba(8, 145, 178, 0.08)' } }}
                             >
                               <Eye size={16} />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Delete Record">
-                            <IconButton
-                              size="small"
-                              onClick={(e) => handleDelete(row.id, e)}
-                              sx={{ color: '#ef4444' }}
-                            >
-                              <Trash2 size={16} />
-                            </IconButton>
-                          </Tooltip>
+                          {isAdmin && (
+                            <Tooltip title="Delete Record">
+                              <IconButton
+                                size="small"
+                                onClick={(e) => handleDelete(row.id, e)}
+                                sx={{ color: '#DC2626', '&:hover': { bgcolor: 'rgba(220, 38, 38, 0.08)' } }}
+                              >
+                                <Trash2 size={16} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -307,7 +344,7 @@ export default function History() {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <Box sx={{ p: 2.5, display: 'flex', justifyContent: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+            <Box sx={{ p: 2.5, display: 'flex', justifyContent: 'center', borderTop: '1px solid #DCE4EE' }}>
               <Pagination
                 count={totalPages}
                 page={page}

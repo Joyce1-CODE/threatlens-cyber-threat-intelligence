@@ -1,26 +1,26 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
-import { CheckCircle2, AlertTriangle, XCircle, HelpCircle } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 
 export default function ProviderStatusBadge({ name, configured, status }) {
   const isReady = configured && status === 'ready';
   const isMissing = status === 'missing_key' || !configured;
   const isRateLimited = status === 'rate_limited';
 
-  let color = '#10b981';
+  let color = '#16A34A';
   let Icon = CheckCircle2;
   let text = 'Ready';
 
   if (isMissing) {
-    color = '#f59e0b';
+    color = '#D97706';
     Icon = AlertTriangle;
     text = 'Key Missing';
   } else if (isRateLimited) {
-    color = '#f97316';
+    color = '#EA580C';
     Icon = AlertTriangle;
     text = 'Rate Limited';
   } else if (status === 'error' || status === 'unauthorized') {
-    color = '#ef4444';
+    color = '#DC2626';
     Icon = XCircle;
     text = 'Auth Error';
   }
@@ -34,12 +34,12 @@ export default function ProviderStatusBadge({ name, configured, status }) {
         px: 1.2,
         py: 0.5,
         borderRadius: 1.5,
-        bgcolor: `${color}14`,
+        bgcolor: `${color}12`,
         border: `1px solid ${color}33`,
       }}
     >
       <Icon size={14} color={color} />
-      <Typography variant="caption" sx={{ color: '#f1f5f9', fontWeight: 600 }}>
+      <Typography variant="caption" sx={{ color: '#172B4D', fontWeight: 600 }}>
         {name}:
       </Typography>
       <Typography variant="caption" sx={{ color, fontWeight: 700 }}>

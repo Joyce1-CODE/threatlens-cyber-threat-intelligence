@@ -8,7 +8,7 @@ const SIDEBAR_WIDTH = 260;
 
 export default function AppLayout() {
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#080c14' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F5F7FB' }}>
       <Sidebar width={SIDEBAR_WIDTH} />
       <Box
         sx={{

@@ -34,6 +34,7 @@ SEV_LOW = colors.HexColor("#059669")
 SEV_MED = colors.HexColor("#d97706")
 SEV_HIGH = colors.HexColor("#ea580c")
 SEV_CRIT = colors.HexColor("#dc2626")
+SEV_UNKNOWN = colors.HexColor("#64748b")
 
 class NumberedCanvas(canvas.Canvas):
     """Custom canvas that computes total page count dynamically for Page X of Y footers."""
@@ -57,27 +58,27 @@ class NumberedCanvas(canvas.Canvas):
         self.saveState()
         self.setFont("Helvetica-Bold", 8)
         self.setFillColor(TEXT_MUTED)
-        
+
         # Header (Top of page)
         self.drawString(36, 756, "THREATLENS AI")
         self.setFont("Helvetica", 8)
         self.drawString(108, 756, "|   CYBER THREAT INTELLIGENCE ASSESSMENT")
         self.drawRightString(576, 756, "CONFIDENTIAL / SOC DEFENSIVE USE")
-        
+
         # Header divider line
         self.setStrokeColor(BORDER_COLOR)
         self.setLineWidth(0.75)
         self.line(36, 748, 576, 748)
-        
+
         # Footer divider line
         self.line(36, 45, 576, 45)
-        
+
         # Footer (Bottom of page)
         self.setFont("Helvetica", 8)
         self.drawString(36, 32, "ThreatLens AI Automated Threat Assessment — Generated from Passive Telemetry")
         page_str = f"Page {self._pageNumber} of {page_count}"
         self.drawRightString(576, 32, page_str)
-        
+
         self.restoreState()
 
 def get_severity_color(severity: str):
@@ -88,6 +89,8 @@ def get_severity_color(severity: str):
         return SEV_HIGH
     elif s == "Medium":
         return SEV_MED
+    elif s in ("Unknown", "Unverified"):
+        return SEV_UNKNOWN
     return SEV_LOW
 
 def generate_threat_report_pdf(investigation: Investigation) -> bytes:
@@ -182,7 +185,7 @@ def generate_threat_report_pdf(investigation: Investigation) -> bytes:
 
     # 2. Executive Indicator & Risk Score Summary Box
     sev_color = get_severity_color(investigation.severity)
-    
+
     # Left Column: Target Indicator Details
     indicator_cell = [
         Paragraph("<b>TARGET INDICATOR DETAILS</b>", bold_style),
@@ -236,10 +239,10 @@ def generate_threat_report_pdf(investigation: Investigation) -> bytes:
 
     # 4. Intelligence Provider Findings Table
     story.append(Paragraph("1. Primary Intelligence Provider Findings", section_heading))
-    
+
     vt_res = (investigation.provider_results or {}).get("virustotal", {})
     otx_res = (investigation.provider_results or {}).get("alienvault_otx", {})
-    
+
     # VirusTotal Details
     vt_status_text = vt_res.get("status", investigation.vt_status).upper()
     vt_dets = investigation.vt_detections

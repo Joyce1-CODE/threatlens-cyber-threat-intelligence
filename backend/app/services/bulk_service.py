@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.ioc_validator import validate_and_normalize_ioc, IOCValidationError
 from app.services.aggregator import ThreatAggregator
 from app.services.history_service import HistoryService
+from app.services.rate_limiter import ProviderRateLimiter
 
 MAX_BATCH_SIZE = 50
 MAX_CSV_BYTES = 2 * 1024 * 1024 # 2 Megabytes
@@ -155,11 +156,12 @@ class BulkService:
     async def process_batch_triage(
         items: List[Dict[str, str]],
         db: Session,
-        concurrency: int = 4
+        concurrency: int = 4,
+        rate_limiter: Optional[ProviderRateLimiter] = None
     ) -> Dict[str, Any]:
         """
         Executes bounded concurrent investigation for a batch of up to 50 indicators.
-        Persists each completed investigation to SQLite.
+        Persists each completed investigation to SQLite with rate-limit protection.
         """
         unique_targets: List[Tuple[str, str]] = []
         seen = set()
@@ -177,6 +179,16 @@ class BulkService:
 
         aggregator = ThreatAggregator()
         semaphore = asyncio.Semaphore(concurrency)
+
+        # Initialize rate limiter with provider pacing if not supplied
+        if rate_limiter is None:
+            # Pacing: 15s between VT requests if VT key configured; 0.5s for OTX; 0s if missing keys
+            vt_pacing = 15.0 if aggregator.vt.is_configured else 0.0
+            otx_pacing = 0.5 if aggregator.otx.is_configured else 0.0
+            rate_limiter = ProviderRateLimiter(
+                vt_interval_seconds=vt_pacing,
+                otx_interval_seconds=otx_pacing
+            )
 
         async def _triage_single(raw_indicator: str, req_type: str) -> Dict[str, Any]:
             async with semaphore:
@@ -203,7 +215,11 @@ class BulkService:
                         "created_at": None,
                     }
 
-                agg_result = await aggregator.investigate(norm_ind, detected_t)
+                agg_result = await aggregator.investigate(
+                    norm_ind,
+                    detected_t,
+                    rate_limiter=rate_limiter
+                )
 
                 record = HistoryService.create_investigation(
                     db=db,
@@ -240,6 +256,10 @@ class BulkService:
         invalid_count = sum(1 for r in results if r["status"] == "invalid")
         high_critical = sum(1 for r in results if r["severity"] in ("High", "Critical"))
         clean_count = sum(1 for r in results if r["severity"] == "Low" and r["status"] == "completed")
+        rate_limited_count = sum(
+            1 for r in results
+            if r.get("vt_status") == "rate_limited" or r.get("otx_status") == "rate_limited"
+        )
 
         return {
             "total_submitted": len(unique_targets),
@@ -247,6 +267,7 @@ class BulkService:
             "invalid": invalid_count,
             "high_critical_count": high_critical,
             "clean_count": clean_count,
+            "rate_limited_count": rate_limited_count,
             "results": results,
         }
 

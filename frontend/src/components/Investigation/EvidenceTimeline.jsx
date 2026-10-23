@@ -11,13 +11,13 @@ export default function EvidenceTimeline({ evidence = [] }) {
     switch (severity?.toLowerCase()) {
       case 'critical':
       case 'high':
-        return <ShieldAlert size={16} color="#ef4444" />;
+        return <ShieldAlert size={16} color="#DC2626" />;
       case 'medium':
-        return <AlertCircle size={16} color="#f59e0b" />;
+        return <AlertCircle size={16} color="#D97706" />;
       case 'low':
-        return <ShieldCheck size={16} color="#10b981" />;
+        return <ShieldCheck size={16} color="#16A34A" />;
       default:
-        return <Info size={16} color="#38bdf8" />;
+        return <Info size={16} color="#0891B2" />;
     }
   };
 
@@ -25,20 +25,20 @@ export default function EvidenceTimeline({ evidence = [] }) {
     switch (severity?.toLowerCase()) {
       case 'critical':
       case 'high':
-        return '#ef4444';
+        return '#DC2626';
       case 'medium':
-        return '#f59e0b';
+        return '#D97706';
       case 'low':
-        return '#10b981';
+        return '#16A34A';
       default:
-        return '#38bdf8';
+        return '#0891B2';
     }
   };
 
   return (
-    <Card sx={{ bgcolor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+    <Card sx={{ bgcolor: '#FFFFFF', border: '1px solid #DCE4EE', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)', borderRadius: 2.5 }}>
       <CardContent sx={{ p: 2.8 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, color: '#f8fafc', mb: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, color: '#172B4D', mb: 2 }}>
           Evidence & Corroborating Signals ({evidence.length})
         </Typography>
 
@@ -50,8 +50,9 @@ export default function EvidenceTimeline({ evidence = [] }) {
                 key={idx}
                 sx={{
                   p: 1.8,
-                  bgcolor: '#080c14',
+                  bgcolor: '#F8FAFC',
                   borderRadius: 2,
+                  border: '1px solid #DCE4EE',
                   borderLeft: `4px solid ${sevColor}`,
                   display: 'flex',
                   alignItems: 'flex-start',
@@ -61,14 +62,14 @@ export default function EvidenceTimeline({ evidence = [] }) {
                 <Box sx={{ mt: 0.3 }}>{getIcon(item.severity)}</Box>
                 <Box sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.3 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#f1f5f9' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#172B4D' }}>
                       {item.title}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
+                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>
                       {item.source}
                     </Typography>
                   </Box>
-                  <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', lineHeight: 1.5 }}>
+                  <Typography variant="caption" sx={{ color: '#64748B', display: 'block', lineHeight: 1.5 }}>
                     {item.description}
                   </Typography>
                 </Box>

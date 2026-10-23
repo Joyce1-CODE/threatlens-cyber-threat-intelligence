@@ -5,12 +5,12 @@ from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.database import init_db
-from app.routers import health, investigate, stats, bulk
+from app.routers import health, investigate, stats, bulk, auth, users
 from app.ioc_validator import IOCValidationError
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize database tables on startup
+    # Initialize database tables and bootstrap first admin safely
     init_db()
     yield
 
@@ -26,7 +26,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -39,8 +39,9 @@ async def ioc_validation_exception_handler(request: Request, exc: IOCValidationE
     )
 
 # Register routers under /api
+app.include_router(auth.router, prefix="/api")
+app.include_router(users.router, prefix="/api")
 app.include_router(health.router, prefix="/api")
 app.include_router(investigate.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
-
 app.include_router(bulk.router, prefix="/api")

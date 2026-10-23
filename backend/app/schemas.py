@@ -49,7 +49,7 @@ class EvidenceItem(BaseModel):
 
 class InvestigationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: str
     indicator: str
     normalized_indicator: str
@@ -72,7 +72,7 @@ class InvestigationResponse(BaseModel):
 
 class InvestigationListItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: str
     indicator: str
     normalized_indicator: str
@@ -101,3 +101,50 @@ class DashboardStatsResponse(BaseModel):
     indicator_type_breakdown: Dict[str, int]
     provider_health: Dict[str, ProviderStatus]
     recent_investigations: List[InvestigationListItem]
+
+
+# ==========================================
+# Authentication & User Management Schemas
+# ==========================================
+
+class LoginRequest(BaseModel):
+    username: str = Field(..., min_length=1, max_length=128, description="Username or email")
+    password: str = Field(..., min_length=1, max_length=256, description="User password")
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: Optional[str] = Field(default=None, description="Optional refresh token string if not supplied via cookie")
+
+class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    username: str
+    email: str
+    full_name: Optional[str] = ""
+    role: str
+    is_active: bool
+    created_at: datetime
+
+class AuthTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    user: UserResponse
+    refresh_token: Optional[str] = None
+
+class UserCreateRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=64)
+    email: str = Field(..., min_length=5, max_length=255)
+    password: str = Field(..., min_length=8, max_length=128)
+    full_name: Optional[str] = ""
+    role: str = Field(default="Read-Only Analyst", description="Admin, Senior Analyst, or Read-Only Analyst")
+
+class UserUpdateRequest(BaseModel):
+    full_name: Optional[str] = None
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+    password: Optional[str] = Field(default=None, min_length=8, max_length=128)
+
+class UserListResponse(BaseModel):
+    total: int
+    users: List[UserResponse]
