@@ -313,6 +313,110 @@ Vite generates optimized production assets in `frontend/dist/`.
 
 ---
 
+## 🚀 Production Deployment (Vercel + Render + PostgreSQL)
+
+ThreatLens AI is architected for zero-cost, high-reliability deployment using free-tier cloud infrastructure:
+- **Frontend**: Hosted on **Vercel** (Global Edge CDN, Automatic HTTPS, SPA Routing via `vercel.json`).
+- **Backend**: Hosted on **Render** (FastAPI ASGI Web Service on Python 3.11/3.14 via `render.yaml`).
+- **Database**: **Managed PostgreSQL** on Render, [Neon](https://neon.tech), or [Supabase](https://supabase.com) (providing persistent investigation history across container restarts).
+
+```mermaid
+graph LR
+    User[SOC Analyst Browser] -->|HTTPS| Vercel[Vercel Global CDN<br/>React + Vite SPA]
+    Vercel -->|REST API / CORS| Render[Render Web Service<br/>FastAPI Backend]
+    Render -->|SQLAlchemy 2.0 Pool| DB[(Managed PostgreSQL<br/>Render / Neon / Supabase)]
+    Render -->|Passive Lookups| VT[VirusTotal v3 API]
+    Render -->|Passive Lookups| OTX[AlienVault OTX API]
+```
+
+### 1. Database Persistence Evaluation (Critical)
+> [!WARNING]
+> **SQLite on Render is Ephemeral:** Render's free-tier Web Services run on ephemeral disks. If you run SQLite in production on Render, your database resets whenever the service goes to sleep (after 15 minutes of inactivity) or redeploys.
+> **Solution:** Use a free managed PostgreSQL database. SQLAlchemy connects seamlessly to PostgreSQL out of the box with `psycopg2-binary`.
+
+#### Connecting to Managed PostgreSQL:
+1. Create a free PostgreSQL database on [Render](https://render.com), [Neon](https://neon.tech), or [Supabase](https://supabase.com).
+2. Copy the connection string (e.g. `postgresql://user:password@ep-host.region.neon.tech/threatlens?sslmode=require`).
+3. Set `DATABASE_URL` in your Render Environment Variables. ThreatLens automatically normalizes `postgres://` to `postgresql://` and configures connection pooling (`pool_pre_ping=True`).
+
+#### Migrating Existing Local SQLite Data:
+To transfer existing local investigation history and user accounts to PostgreSQL:
+```bash
+python backend/migrate_to_postgres.py --source threatlens.db --target "postgresql://user:pass@host:5432/threatlens"
+```
+*Your local SQLite file remains 100% intact and untouched.*
+
+---
+
+### 2. Backend Deployment on Render
+
+#### Option A: 1-Click Render Blueprint (Recommended)
+1. Push your repository to GitHub.
+2. In the [Render Dashboard](https://dashboard.render.com), click **New +** > **Blueprint**.
+3. Select your repository: `https://github.com/Joyce1-CODE/threatlens-cyber-threat-intelligence`.
+4. Render automatically detects [`render.yaml`](render.yaml) and provisions:
+   - `threatlens-api` Web Service
+   - `threatlens-db` Managed PostgreSQL instance
+   - Auto-generated 256-bit `JWT_SECRET_KEY`
+5. Fill in the required environment variables:
+   - `CORS_ORIGINS`: Set to your Vercel URL (e.g. `https://threatlens.vercel.app`)
+   - `VIRUSTOTAL_API_KEY`: Your VirusTotal API key (optional)
+   - `OTX_API_KEY`: Your AlienVault OTX key (optional)
+6. Click **Apply**.
+
+#### Option B: Manual Web Service Setup on Render
+1. In Render, click **New +** > **Web Service**.
+2. Connect your GitHub repository.
+3. Configure the settings:
+   - **Name**: `threatlens-api`
+   - **Root Directory**: `backend`
+   - **Environment**: `Python`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - **Health Check Path**: `/api/health`
+4. Add Environment Variables:
+   | Variable | Value / Description |
+   | :--- | :--- |
+   | `APP_ENV` | `production` |
+   | `PYTHON_VERSION` | `3.11.9` |
+   | `DATABASE_URL` | `postgresql://...` (or leave default for ephemeral SQLite demo) |
+   | `JWT_SECRET_KEY` | Strong random string (generate with `openssl rand -hex 32`) |
+   | `COOKIE_SECURE` | `true` |
+   | `COOKIE_SAMESITE` | `none` |
+   | `CORS_ORIGINS` | `https://your-frontend.vercel.app` |
+   | `VIRUSTOTAL_API_KEY` | Your VirusTotal API Key |
+   | `OTX_API_KEY` | Your AlienVault OTX Key |
+   | `ADMIN_INITIAL_PASSWORD` | Strong initial admin password |
+
+---
+
+### 3. Frontend Deployment on Vercel
+
+1. Log into [Vercel](https://vercel.com) and click **Add New...** > **Project**.
+2. Import your GitHub repository: `threatlens-cyber-threat-intelligence`.
+3. Configure Project Settings:
+   - **Framework Preset**: `Vite`
+   - **Root Directory**: Click `Edit` and select `frontend` (or leave as root; both contain [`vercel.json`](vercel.json) configurations).
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+4. Configure Environment Variables:
+   - `VITE_API_URL`: Set to your Render backend URL (e.g. `https://threatlens-api.onrender.com/api`).
+5. Click **Deploy**.
+
+> [!TIP]
+> **Single-Page Application (SPA) Routing:** Both root [`vercel.json`](vercel.json) and [`frontend/vercel.json`](frontend/vercel.json) include automatic rewrite rules that route all paths `/(.*)` to `/index.html`. Direct browser refreshes on `/investigate`, `/history`, `/bulk`, `/settings`, and `/users` load seamlessly without HTTP 404 errors.
+
+---
+
+### 4. Cross-Origin Cookie & Authentication Architecture
+
+When deploying the frontend on `vercel.app` and the backend on `onrender.com`:
+1. **Primary Security**: Refresh tokens are issued as `HttpOnly`, `Secure`, `SameSite=None` cookies over HTTPS.
+2. **Resilient Fallback**: Modern browsers with strict third-party cookie restrictions (Safari ITP) are automatically supported via ThreatLens's session-scoped refresh fallback mechanism, guaranteeing that session rotation never drops unexpectedly.
+3. **In-Memory Access Tokens**: Short-lived access tokens (15-minute expiration) are strictly held in JavaScript application memory and never written to `localStorage`, eliminating XSS token theft vectors.
+
+---
+
 ## 🔒 Security & Privacy Guarantees
 
 1. **Zero Target Contact**: ThreatLens AI never interacts with target IPs, domains, or URLs. All queries are strictly passive lookups against third-party threat intelligence databases.

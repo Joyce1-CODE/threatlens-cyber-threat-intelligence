@@ -9,8 +9,41 @@ export const setAccessToken = (token) => {
 
 export const getAccessToken = () => inMemoryAccessToken;
 
+// Session-scoped refresh token fallback for cross-domain environments where browsers block third-party cookies
+const REFRESH_FALLBACK_KEY = 'threatlens_rt_fallback';
+export const setRefreshTokenFallback = (token) => {
+  try {
+    if (token) {
+      sessionStorage.setItem(REFRESH_FALLBACK_KEY, token);
+    } else {
+      sessionStorage.removeItem(REFRESH_FALLBACK_KEY);
+    }
+  } catch (e) {
+    // Ignore private browsing storage restrictions
+  }
+};
+export const getRefreshTokenFallback = () => {
+  try {
+    return sessionStorage.getItem(REFRESH_FALLBACK_KEY);
+  } catch (e) {
+    return null;
+  }
+};
+
+// Normalize base URL so trailing slashes or omitted /api suffixes are handled gracefully
+const getNormalizedBaseUrl = () => {
+  let url = (import.meta.env.VITE_API_URL || '/api').trim();
+  if (url.endsWith('/')) {
+    url = url.slice(0, -1);
+  }
+  if (url.startsWith('http') && !url.endsWith('/api')) {
+    url = `${url}/api`;
+  }
+  return url;
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: getNormalizedBaseUrl(),
   timeout: 45000,
   withCredentials: true, // Enables sending and receiving httpOnly refresh cookies
   headers: {
@@ -74,15 +107,21 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const refreshRes = await api.post('/auth/refresh');
+        const fallback = getRefreshTokenFallback();
+        const payload = fallback ? { refresh_token: fallback } : {};
+        const refreshRes = await api.post('/auth/refresh', payload);
         const newToken = refreshRes.data.access_token;
         setAccessToken(newToken);
+        if (refreshRes.data.refresh_token) {
+          setRefreshTokenFallback(refreshRes.data.refresh_token);
+        }
         processQueue(null, newToken);
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch (refreshErr) {
         processQueue(refreshErr, null);
         setAccessToken(null);
+        setRefreshTokenFallback(null);
         // Dispatch custom session-expired event
         window.dispatchEvent(new CustomEvent('threatlens:session_expired'));
         return Promise.reject(refreshErr);
@@ -102,13 +141,21 @@ export const threatApi = {
     if (res.data && res.data.access_token) {
       setAccessToken(res.data.access_token);
     }
+    if (res.data && res.data.refresh_token) {
+      setRefreshTokenFallback(res.data.refresh_token);
+    }
     return res.data;
   },
 
   refresh: async () => {
-    const res = await api.post('/auth/refresh');
+    const fallback = getRefreshTokenFallback();
+    const payload = fallback ? { refresh_token: fallback } : {};
+    const res = await api.post('/auth/refresh', payload);
     if (res.data && res.data.access_token) {
       setAccessToken(res.data.access_token);
+    }
+    if (res.data && res.data.refresh_token) {
+      setRefreshTokenFallback(res.data.refresh_token);
     }
     return res.data;
   },
@@ -118,6 +165,7 @@ export const threatApi = {
       await api.post('/auth/logout');
     } finally {
       setAccessToken(null);
+      setRefreshTokenFallback(null);
     }
   },
 

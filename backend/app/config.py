@@ -1,5 +1,6 @@
 import os
 from typing import List
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -41,6 +42,27 @@ class Settings(BaseSettings):
         "http://localhost:5176",
         "http://127.0.0.1:5176",
     ]
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v):
+        if isinstance(v, str):
+            v = v.strip()
+            if v.startswith("[") and v.endswith("]"):
+                import json
+                try:
+                    return json.loads(v)
+                except Exception:
+                    pass
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
+
+    @field_validator("COOKIE_SECURE", mode="before")
+    @classmethod
+    def validate_cookie_secure(cls, v):
+        if isinstance(v, str):
+            return v.lower() in ("true", "1", "yes")
+        return bool(v)
 
     model_config = SettingsConfigDict(
         env_file=(".env", "backend/.env", "../.env"),

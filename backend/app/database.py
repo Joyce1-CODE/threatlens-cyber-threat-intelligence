@@ -3,14 +3,23 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.config import settings
 
-# SQLite specific connect_args to allow multithreading safely
-connect_args = {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
+# Normalize database URL (handles Render / Heroku / Supabase postgres:// prefix)
+db_url = settings.DATABASE_URL
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-engine = create_engine(
-    settings.DATABASE_URL,
-    connect_args=connect_args,
-    echo=False
-)
+# Configure engine kwargs based on dialect
+engine_kwargs = {"echo": False}
+if db_url.startswith("sqlite"):
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # Production PostgreSQL connection pooling & keepalive
+    engine_kwargs["pool_pre_ping"] = True
+    engine_kwargs["pool_size"] = 10
+    engine_kwargs["max_overflow"] = 20
+    engine_kwargs["pool_recycle"] = 300
+
+engine = create_engine(db_url, **engine_kwargs)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

@@ -18,11 +18,14 @@ if __name__ == "__main__":
         # Default to 8000, fallback to 8001 if 8000 is occupied
         port = 8001 if is_port_in_use(8000) else 8000
 
-    print(f"[*] Starting ThreatLens AI Backend on http://127.0.0.1:{port}")
+    host = os.environ.get("HOST", "0.0.0.0" if env_port > 0 else "127.0.0.1")
+    reload = os.environ.get("APP_ENV", "development").lower() != "production"
+
+    print(f"[*] Starting ThreatLens AI Backend on http://{host}:{port}")
     uvicorn.run(
         "app.main:app",
-        host="127.0.0.1",
+        host=host,
         port=port,
-        reload=True,
+        reload=reload,
         log_level="info"
     )
