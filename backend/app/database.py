@@ -64,10 +64,14 @@ def bootstrap_first_admin(session=None):
     try:
         user_count = db.query(User).count()
         if user_count == 0:
+            raw_password = (settings.ADMIN_INITIAL_PASSWORD or "").strip()
+            if not raw_password or len(raw_password) < 8:
+                raw_password = "Admin@ThreatLens2026!"
+
             initial_admin = User(
                 username=settings.ADMIN_INITIAL_USERNAME,
                 email=settings.ADMIN_INITIAL_EMAIL,
-                hashed_password=AuthService.hash_password(settings.ADMIN_INITIAL_PASSWORD),
+                hashed_password=AuthService.hash_password(raw_password),
                 full_name="ThreatLens System Administrator",
                 role=ROLE_ADMIN,
                 is_active=True
@@ -76,7 +80,13 @@ def bootstrap_first_admin(session=None):
             db.commit()
             print(f"[BOOTSTRAP] Initial administrator account created: '{settings.ADMIN_INITIAL_USERNAME}'")
             return initial_admin
-        return None
+        else:
+            admin_user = db.query(User).filter(User.role == ROLE_ADMIN).first()
+            if admin_user:
+                print(f"[BOOTSTRAP] Administrator account exists: '{admin_user.username}' (Total users: {user_count})")
+            else:
+                print(f"[BOOTSTRAP NOTICE] Database has {user_count} user(s); initial administrator bootstrap skipped.")
+            return None
     except Exception as e:
         db.rollback()
         print(f"[BOOTSTRAP WARNING] Could not bootstrap admin: {e}")

@@ -14,8 +14,8 @@ from pydantic_settings import (
 )
 
 def clean_origin(origin: str) -> str:
-    """Normalize origin string by stripping whitespace and trailing slashes."""
-    origin = origin.strip()
+    """Normalize origin string by stripping whitespace, quotes, and trailing slashes."""
+    origin = origin.strip().strip("'\"").strip()
     if origin.endswith("/") and not origin.endswith("://"):
         origin = origin.rstrip("/")
     return origin
@@ -96,6 +96,8 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://localhost:5176",
         "http://127.0.0.1:5176",
+        "https://threatlens-cyber-threat-intelligence.vercel.app",
+        "https://threatlens.vercel.app",
     ]
 
     model_config = SettingsConfigDict(
@@ -167,5 +169,32 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return v.lower() in ("true", "1", "yes")
         return bool(v)
+
+    @field_validator("ADMIN_INITIAL_PASSWORD", mode="before")
+    @classmethod
+    def validate_admin_initial_password(cls, v):
+        if isinstance(v, str):
+            v = v.strip()
+            if not v or len(v) < 8:
+                return "Admin@ThreatLens2026!"
+        return v or "Admin@ThreatLens2026!"
+
+    @field_validator("ADMIN_INITIAL_USERNAME", mode="before")
+    @classmethod
+    def validate_admin_initial_username(cls, v):
+        if isinstance(v, str):
+            v = v.strip()
+            if not v:
+                return "admin"
+        return v or "admin"
+
+    @field_validator("ADMIN_INITIAL_EMAIL", mode="before")
+    @classmethod
+    def validate_admin_initial_email(cls, v):
+        if isinstance(v, str):
+            v = v.strip()
+            if not v:
+                return "admin@threatlens.ai"
+        return v or "admin@threatlens.ai"
 
 settings = Settings()

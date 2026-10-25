@@ -32,7 +32,7 @@ services:
       - key: COOKIE_SAMESITE
         value: "none"
       - key: CORS_ORIGINS
-        sync: false # Set to your Vercel frontend URL, e.g. https://threatlens.vercel.app
+        value: "https://threatlens-cyber-threat-intelligence.vercel.app,https://threatlens.vercel.app"
       - key: VIRUSTOTAL_API_KEY
         sync: false # Set your VirusTotal API key (optional)
       - key: OTX_API_KEY
@@ -42,7 +42,7 @@ services:
       - key: ADMIN_INITIAL_EMAIL
         value: admin@threatlens.ai
       - key: ADMIN_INITIAL_PASSWORD
-        sync: false # Set custom bootstrap admin password or leave unset for default
+        value: "Admin@ThreatLens2026!"
 
 databases:
   - name: threatlens-db

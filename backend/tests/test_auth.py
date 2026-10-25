@@ -330,3 +330,78 @@ def test_safe_administrator_bootstrap():
     assert second_run is None
     assert fresh_db.query(User).count() == 1
     fresh_db.close()
+
+def test_auth_status_endpoint():
+    res = client.get("/api/auth/status")
+    assert res.status_code == 200
+    data = res.json()
+    assert "initialized" in data
+    assert "admin_configured" in data
+    assert "user_count" in data
+    assert "cookie_secure" in data
+    assert "cookie_samesite" in data
+    assert "cors_origins_count" in data
+    assert isinstance(data["initialized"], bool)
+    assert isinstance(data["admin_configured"], bool)
+    assert data["cors_origins_count"] > 0
+
+def test_admin_initial_password_validation_empty_fallback(monkeypatch):
+    from app.config import Settings
+    monkeypatch.setenv("ADMIN_INITIAL_PASSWORD", "")
+    s = Settings()
+    assert s.ADMIN_INITIAL_PASSWORD == "Admin@ThreatLens2026!"
+
+    monkeypatch.setenv("ADMIN_INITIAL_PASSWORD", "   ")
+    s2 = Settings()
+    assert s2.ADMIN_INITIAL_PASSWORD == "Admin@ThreatLens2026!"
+
+    monkeypatch.setenv("ADMIN_INITIAL_PASSWORD", "CustomStrongPass123!")
+    s3 = Settings()
+    assert s3.ADMIN_INITIAL_PASSWORD == "CustomStrongPass123!"
+
+def test_bootstrap_admin_cli_validation():
+    from bootstrap_admin import bootstrap_admin
+    import uuid
+
+    # Reject empty username
+    assert bootstrap_admin("", "test@threatlens.ai", "StrongPass123!") is False
+
+    # Reject invalid email
+    assert bootstrap_admin("testuser", "notanemail", "StrongPass123!") is False
+
+    # Reject short / empty password
+    assert bootstrap_admin("testuser", "test@threatlens.ai", "") is False
+    assert bootstrap_admin("testuser", "test@threatlens.ai", "short") is False
+
+    unique_user = f"cli_{uuid.uuid4().hex[:8]}"
+    unique_email = f"{unique_user}@threatlens.test"
+
+    # Create user successfully
+    assert bootstrap_admin(unique_user, unique_email, "StrongPass123!") is True
+
+    # Duplicate without force should reject
+    assert bootstrap_admin(unique_user, unique_email, "NewPass12345!", force=False) is False
+
+    # Duplicate with force should succeed
+    assert bootstrap_admin(unique_user, unique_email, "NewPass12345!", force=True) is True
+
+def test_cross_origin_cors_preflight_on_login():
+    origin = "https://threatlens-cyber-threat-intelligence.vercel.app"
+    res = client.options(
+        "/api/auth/login",
+        headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        }
+    )
+    assert res.status_code == 200
+    assert res.headers.get("access-control-allow-origin") == origin
+    assert res.headers.get("access-control-allow-credentials") == "true"
+    assert "POST" in res.headers.get("access-control-allow-methods", "")
+
+def test_clean_origin_strips_quotes_and_trailing_slashes():
+    from app.config import clean_origin
+    assert clean_origin('"https://threatlens.vercel.app/"') == "https://threatlens.vercel.app"
+    assert clean_origin("'https://threatlens.vercel.app/'") == "https://threatlens.vercel.app"
+    assert clean_origin("https://threatlens.vercel.app/") == "https://threatlens.vercel.app"

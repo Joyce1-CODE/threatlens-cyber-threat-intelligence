@@ -80,7 +80,12 @@ export default function Login() {
       await login(username.trim(), password);
       navigate(from, { replace: true });
     } catch (err) {
-      const detail = err.response?.data?.detail || 'Authentication failed. Please verify your credentials.';
+      const detail =
+        err.response?.data?.detail ||
+        (err.response?.data && typeof err.response.data === 'string' ? err.response.data : null) ||
+        (err.message === 'Network Error'
+          ? 'Network Error: Unable to reach backend API. Please verify backend URL and CORS configuration.'
+          : err.message || 'Authentication failed. Please verify your credentials.');
       setErrorMessage(detail);
     } finally {
       setLoading(false);

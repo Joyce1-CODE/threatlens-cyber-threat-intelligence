@@ -55,7 +55,7 @@ def login(
         httponly=True,
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
         secure=settings.COOKIE_SECURE,
-        samesite=settings.COOKIE_SAMESITE,
+        samesite=settings.COOKIE_SAMESITE.lower(),
         path="/api/auth"
     )
 
@@ -89,7 +89,7 @@ def refresh_token_endpoint(
         httponly=True,
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
         secure=settings.COOKIE_SECURE,
-        samesite=settings.COOKIE_SAMESITE,
+        samesite=settings.COOKIE_SAMESITE.lower(),
         path="/api/auth"
     )
 
@@ -112,9 +112,28 @@ def logout(
     if raw_token:
         AuthService.revoke_refresh_token(db, raw_token)
 
-    response.delete_cookie(key=COOKIE_NAME, path="/api/auth")
+    response.delete_cookie(
+        key=COOKIE_NAME,
+        path="/api/auth",
+        samesite=settings.COOKIE_SAMESITE.lower(),
+        secure=settings.COOKIE_SECURE
+    )
     return {"status": "success", "message": "Successfully logged out."}
 
 @router.get("/me", response_model=UserResponse)
 def get_current_user_profile(current_user: User = Depends(get_current_user)):
     return UserResponse.model_validate(current_user)
+
+@router.get("/status")
+def auth_status(db: Session = Depends(get_db)):
+    """Safe public health diagnostic endpoint to verify auth initialization without exposing secrets."""
+    user_count = db.query(User).count()
+    admin_count = db.query(User).filter(User.role == "Admin").count()
+    return {
+        "initialized": user_count > 0,
+        "admin_configured": admin_count > 0,
+        "user_count": user_count,
+        "cookie_secure": settings.COOKIE_SECURE,
+        "cookie_samesite": settings.COOKIE_SAMESITE.lower(),
+        "cors_origins_count": len(settings.CORS_ORIGINS),
+    }
