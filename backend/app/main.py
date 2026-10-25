@@ -38,10 +38,24 @@ async def ioc_validation_exception_handler(request: Request, exc: IOCValidationE
         content={"detail": exc.message, "field": exc.field}
     )
 
-# Register routers under /api
+# Register routers under /api and root (to handle proxy rewrites and direct client paths gracefully)
 app.include_router(auth.router, prefix="/api")
+app.include_router(auth.router, prefix="")
+app.include_router(auth.auth_direct_router, prefix="/api")
+app.include_router(auth.auth_direct_router, prefix="")
+
 app.include_router(users.router, prefix="/api")
+app.include_router(users.router, prefix="")
+
 app.include_router(health.router, prefix="/api")
+app.include_router(health.router, prefix="")
+
 app.include_router(investigate.router, prefix="/api")
+app.include_router(investigate.router, prefix="")
+
 app.include_router(stats.router, prefix="/api")
+app.include_router(stats.router, prefix="")
+
 app.include_router(bulk.router, prefix="/api")
+app.include_router(bulk.router, prefix="")
+

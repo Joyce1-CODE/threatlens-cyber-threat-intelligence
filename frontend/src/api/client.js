@@ -30,17 +30,44 @@ export const getRefreshTokenFallback = () => {
   }
 };
 
-// Normalize base URL so trailing slashes or omitted /api suffixes are handled gracefully
-const getNormalizedBaseUrl = () => {
-  let url = (import.meta.env.VITE_API_URL || '/api').trim();
-  if (url.endsWith('/')) {
+// Normalize base URL so trailing slashes, surrounding quotes, or omitted /api suffixes are handled gracefully
+export const getNormalizedBaseUrl = (
+  envUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || undefined,
+  isProd = Boolean(typeof import.meta !== 'undefined' && import.meta.env?.PROD),
+  hostname = typeof window !== 'undefined' ? window.location?.hostname : 'localhost'
+) => {
+  let url = (typeof envUrl === 'string' ? envUrl : '').trim();
+
+  // Strip enclosing quotes from environment variable definitions if present
+  if ((url.startsWith('"') && url.endsWith('"')) || (url.startsWith("'") && url.endsWith("'"))) {
+    url = url.slice(1, -1).trim();
+  }
+
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+
+  // In production deployments, if no API URL was configured or relative /api is used on remote hosts,
+  // ensure we target the deployed Render backend API
+  if (!url || url === '/api') {
+    if (isProd && !isLocalhost) {
+      url = 'https://threatlens-api.onrender.com/api';
+    } else {
+      url = '/api';
+    }
+  }
+
+  // Strip any trailing slashes
+  while (url.endsWith('/')) {
     url = url.slice(0, -1);
   }
+
+  // Ensure absolute HTTP(S) URLs include the /api prefix
   if (url.startsWith('http') && !url.endsWith('/api')) {
     url = `${url}/api`;
   }
+
   return url;
 };
+
 
 const api = axios.create({
   baseURL: getNormalizedBaseUrl(),

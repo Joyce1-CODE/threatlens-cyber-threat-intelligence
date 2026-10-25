@@ -56,7 +56,7 @@ def login(
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
         secure=settings.COOKIE_SECURE,
         samesite=settings.COOKIE_SAMESITE.lower(),
-        path="/api/auth"
+        path="/"
     )
 
     return AuthTokenResponse(
@@ -90,7 +90,7 @@ def refresh_token_endpoint(
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
         secure=settings.COOKIE_SECURE,
         samesite=settings.COOKIE_SAMESITE.lower(),
-        path="/api/auth"
+        path="/"
     )
 
     return AuthTokenResponse(
@@ -114,7 +114,7 @@ def logout(
 
     response.delete_cookie(
         key=COOKIE_NAME,
-        path="/api/auth",
+        path="/",
         samesite=settings.COOKIE_SAMESITE.lower(),
         secure=settings.COOKIE_SECURE
     )
@@ -137,3 +137,12 @@ def auth_status(db: Session = Depends(get_db)):
         "cookie_samesite": settings.COOKIE_SAMESITE.lower(),
         "cors_origins_count": len(settings.CORS_ORIGINS),
     }
+
+
+# Direct router providing alias endpoints without /auth prefix (e.g., /login, /refresh, /logout, /me, /status)
+auth_direct_router = APIRouter(tags=["Authentication"])
+auth_direct_router.add_api_route("/login", login, methods=["POST"], response_model=AuthTokenResponse, include_in_schema=False)
+auth_direct_router.add_api_route("/refresh", refresh_token_endpoint, methods=["POST"], response_model=AuthTokenResponse, include_in_schema=False)
+auth_direct_router.add_api_route("/logout", logout, methods=["POST"], include_in_schema=False)
+auth_direct_router.add_api_route("/me", get_current_user_profile, methods=["GET"], response_model=UserResponse, include_in_schema=False)
+auth_direct_router.add_api_route("/status", auth_status, methods=["GET"], include_in_schema=False)

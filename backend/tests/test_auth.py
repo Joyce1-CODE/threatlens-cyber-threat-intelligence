@@ -405,3 +405,33 @@ def test_clean_origin_strips_quotes_and_trailing_slashes():
     assert clean_origin('"https://threatlens.vercel.app/"') == "https://threatlens.vercel.app"
     assert clean_origin("'https://threatlens.vercel.app/'") == "https://threatlens.vercel.app"
     assert clean_origin("https://threatlens.vercel.app/") == "https://threatlens.vercel.app"
+
+def test_login_endpoints_registered_and_reject_invalid_credentials_with_401_not_404():
+    """Verify that all login route variants are properly registered in FastAPI
+    and return HTTP 401 Unauthorized (not 404 Not Found) when presented with invalid credentials.
+    """
+    login_endpoints = [
+        "/api/auth/login",
+        "/auth/login",
+        "/api/login",
+        "/login",
+    ]
+
+    for endpoint in login_endpoints:
+        res = client.post(
+            endpoint,
+            json={"username": "nonexistent_analyst", "password": "InvalidPassword123!"}
+        )
+        assert res.status_code == 401, f"Expected 401 on {endpoint}, got {res.status_code}: {res.text}"
+        assert res.status_code != 404, f"Endpoint {endpoint} must not return 404 Not Found"
+        data = res.json()
+        assert "detail" in data
+        assert data["detail"] == "Invalid username or password."
+
+def test_health_endpoints_registered_at_api_and_root():
+    """Verify health endpoints respond with 200 OK on both /api/health and /health."""
+    for endpoint in ["/api/health", "/health"]:
+        res = client.get(endpoint)
+        assert res.status_code == 200, f"Expected 200 on {endpoint}, got {res.status_code}"
+        assert res.json().get("status") == "healthy"
+
