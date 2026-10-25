@@ -99,3 +99,49 @@ def test_database_url_normalization_and_psycopg2_dialect():
     e5 = create_engine(n5)
     assert e5.dialect.name == "sqlite"
     assert e5.dialect.driver == "pysqlite"
+
+def test_cors_origins_json_array_input(monkeypatch):
+    from app.config import Settings
+    monkeypatch.setenv("CORS_ORIGINS", '["https://threatlens.vercel.app", "http://localhost:5173"]')
+    s = Settings()
+    assert s.CORS_ORIGINS == ["https://threatlens.vercel.app", "http://localhost:5173"]
+
+def test_cors_origins_comma_separated_input(monkeypatch):
+    from app.config import Settings
+    monkeypatch.setenv("CORS_ORIGINS", "https://threatlens.vercel.app,http://localhost:5173")
+    s = Settings()
+    assert s.CORS_ORIGINS == ["https://threatlens.vercel.app", "http://localhost:5173"]
+
+def test_cors_origins_single_origin_input(monkeypatch):
+    from app.config import Settings
+    monkeypatch.setenv("CORS_ORIGINS", "https://threatlens.vercel.app")
+    s = Settings()
+    assert s.CORS_ORIGINS == ["https://threatlens.vercel.app"]
+
+def test_cors_origins_trailing_slash_normalization(monkeypatch):
+    from app.config import Settings
+    monkeypatch.setenv("CORS_ORIGINS", "https://threatlens.vercel.app/ , http://localhost:5173/")
+    s = Settings()
+    assert s.CORS_ORIGINS == ["https://threatlens.vercel.app", "http://localhost:5173"]
+
+def test_cors_origins_empty_and_whitespace_input(monkeypatch):
+    from app.config import Settings
+    monkeypatch.setenv("CORS_ORIGINS", "")
+    s1 = Settings()
+    assert s1.CORS_ORIGINS == []
+
+    monkeypatch.setenv("CORS_ORIGINS", "   ")
+    s2 = Settings()
+    assert s2.CORS_ORIGINS == []
+
+    monkeypatch.setenv("CORS_ORIGINS", "[]")
+    s3 = Settings()
+    assert s3.CORS_ORIGINS == []
+
+def test_cors_origins_wildcard_rejected_for_credentials(monkeypatch):
+    from app.config import Settings
+    # Wildcard '*' must be stripped to prevent CORS credential vulnerability
+    monkeypatch.setenv("CORS_ORIGINS", "*,https://threatlens.vercel.app")
+    s = Settings()
+    assert s.CORS_ORIGINS == ["https://threatlens.vercel.app"]
+    assert "*" not in s.CORS_ORIGINS
