@@ -17,11 +17,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.models import Base, User, RefreshToken, Investigation
 from app.config import settings
+from app.database import normalize_database_url
 
 def migrate(source_sqlite_path: str, target_postgres_url: str):
-    # Normalize postgres URL if needed
-    if target_postgres_url.startswith("postgres://"):
-        target_postgres_url = target_postgres_url.replace("postgres://", "postgresql://", 1)
+    # Normalize postgres URL to ensure psycopg2 driver is selected
+    target_postgres_url = normalize_database_url(target_postgres_url)
 
     print(f"[*] Starting migration from: {source_sqlite_path}")
     print(f"[*] Target database: {target_postgres_url.split('@')[-1] if '@' in target_postgres_url else 'Target DB'}")

@@ -62,3 +62,40 @@ def test_investigate_valid_ioc_and_persistence():
     assert stats_res.status_code == 200
     stats_data = stats_res.json()
     assert stats_data["total_investigations"] >= 1
+
+def test_database_url_normalization_and_psycopg2_dialect():
+    from app.database import normalize_database_url
+    from sqlalchemy import create_engine
+
+    # 1. Test legacy postgres:// normalization
+    u1 = "postgres://user:pass@host:5432/threatlens?sslmode=require"
+    n1 = normalize_database_url(u1)
+    assert n1.startswith("postgresql+psycopg2://")
+    e1 = create_engine(n1)
+    assert e1.dialect.name == "postgresql"
+    assert e1.dialect.driver == "psycopg2"
+
+    # 2. Test unadorned postgresql:// normalization
+    u2 = "postgresql://user:pass@host:5432/threatlens"
+    n2 = normalize_database_url(u2)
+    assert n2.startswith("postgresql+psycopg2://")
+    e2 = create_engine(n2)
+    assert e2.dialect.name == "postgresql"
+    assert e2.dialect.driver == "psycopg2"
+
+    # 3. Test explicit driver preservation
+    u3 = "postgresql+psycopg2://user:pass@host:5432/threatlens"
+    n3 = normalize_database_url(u3)
+    assert n3 == u3
+
+    u4 = "postgresql+asyncpg://user:pass@host:5432/threatlens"
+    n4 = normalize_database_url(u4)
+    assert n4 == u4
+
+    # 4. Test SQLite preservation
+    u5 = "sqlite:///./threatlens.db"
+    n5 = normalize_database_url(u5)
+    assert n5 == u5
+    e5 = create_engine(n5)
+    assert e5.dialect.name == "sqlite"
+    assert e5.dialect.driver == "pysqlite"

@@ -3,10 +3,25 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.config import settings
 
-# Normalize database URL (handles Render / Heroku / Supabase postgres:// prefix)
-db_url = settings.DATABASE_URL
-if db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
+def normalize_database_url(url: str) -> str:
+    """
+    Normalizes database URLs for SQLAlchemy compatibility.
+    - Converts legacy 'postgres://' (Render/Heroku) to 'postgresql+psycopg2://'
+    - Converts unadorned 'postgresql://' to 'postgresql+psycopg2://' so that
+      SQLAlchemy loads the installed psycopg2 driver instead of searching for psycopg (v3).
+    - Preserves explicitly specified drivers (e.g. 'postgresql+psycopg2://', 'postgresql+asyncpg://')
+    - Preserves SQLite and other database URLs unchanged.
+    """
+    if not url:
+        return "sqlite:///./threatlens.db"
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+psycopg2://", 1)
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+psycopg2://", 1)
+    return url
+
+# Normalize database URL
+db_url = normalize_database_url(settings.DATABASE_URL)
 
 # Configure engine kwargs based on dialect
 engine_kwargs = {"echo": False}
