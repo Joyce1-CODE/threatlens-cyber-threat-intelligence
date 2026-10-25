@@ -32,9 +32,7 @@ export const getRefreshTokenFallback = () => {
 
 // Normalize base URL so trailing slashes, surrounding quotes, or omitted /api suffixes are handled gracefully
 export const getNormalizedBaseUrl = (
-  envUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || undefined,
-  isProd = Boolean(typeof import.meta !== 'undefined' && import.meta.env?.PROD),
-  hostname = typeof window !== 'undefined' ? window.location?.hostname : 'localhost'
+  envUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || undefined
 ) => {
   let url = (typeof envUrl === 'string' ? envUrl : '').trim();
 
@@ -43,16 +41,15 @@ export const getNormalizedBaseUrl = (
     url = url.slice(1, -1).trim();
   }
 
-  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+  // Gracefully correct legacy hostname without instance slug if configured in dashboard
+  if (url.includes('threatlens-api.onrender.com')) {
+    url = url.replace('threatlens-api.onrender.com', 'threatlens-api-wwxr.onrender.com');
+  }
 
-  // In production deployments, if no API URL was configured or relative /api is used on remote hosts,
-  // ensure we target the deployed Render backend API
+  // Default to relative /api to use Vite dev proxy locally and Vercel edge rewrite proxy in production.
+  // This avoids CORS preflight failures and cross-origin third-party cookie restrictions entirely.
   if (!url || url === '/api') {
-    if (isProd && !isLocalhost) {
-      url = 'https://threatlens-api.onrender.com/api';
-    } else {
-      url = '/api';
-    }
+    return '/api';
   }
 
   // Strip any trailing slashes

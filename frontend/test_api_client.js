@@ -2,57 +2,56 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getNormalizedBaseUrl } from './src/api/client.js';
 
-test('getNormalizedBaseUrl defaults to /api in local development', () => {
-  assert.equal(getNormalizedBaseUrl(undefined, false, 'localhost'), '/api');
-  assert.equal(getNormalizedBaseUrl('/api', false, 'localhost'), '/api');
-  assert.equal(getNormalizedBaseUrl('', false, '127.0.0.1'), '/api');
-});
-
-test('getNormalizedBaseUrl falls back to Render backend in production when env is unset or /api', () => {
-  assert.equal(
-    getNormalizedBaseUrl(undefined, true, 'threatlens-cyber-threat-intelligence.vercel.app'),
-    'https://threatlens-api.onrender.com/api'
-  );
-  assert.equal(
-    getNormalizedBaseUrl('/api', true, 'threatlens-cyber-threat-intelligence.vercel.app'),
-    'https://threatlens-api.onrender.com/api'
-  );
-  assert.equal(
-    getNormalizedBaseUrl('', true, 'custom-domain.com'),
-    'https://threatlens-api.onrender.com/api'
-  );
+test('getNormalizedBaseUrl defaults to /api to support local Vite proxy and Vercel edge rewrite proxy', () => {
+  assert.equal(getNormalizedBaseUrl(undefined), '/api');
+  assert.equal(getNormalizedBaseUrl('/api'), '/api');
+  assert.equal(getNormalizedBaseUrl(''), '/api');
+  assert.equal(getNormalizedBaseUrl('   '), '/api');
+  assert.equal(getNormalizedBaseUrl('"/api"'), '/api');
+  assert.equal(getNormalizedBaseUrl("'/api'"), '/api');
 });
 
 test('getNormalizedBaseUrl normalizes configured Render backend URLs', () => {
   assert.equal(
-    getNormalizedBaseUrl('https://threatlens-api.onrender.com', true, 'vercel.app'),
-    'https://threatlens-api.onrender.com/api'
+    getNormalizedBaseUrl('https://threatlens-api-wwxr.onrender.com'),
+    'https://threatlens-api-wwxr.onrender.com/api'
   );
   assert.equal(
-    getNormalizedBaseUrl('https://threatlens-api.onrender.com/', true, 'vercel.app'),
-    'https://threatlens-api.onrender.com/api'
+    getNormalizedBaseUrl('https://threatlens-api-wwxr.onrender.com/'),
+    'https://threatlens-api-wwxr.onrender.com/api'
   );
   assert.equal(
-    getNormalizedBaseUrl('https://threatlens-api.onrender.com/api', true, 'vercel.app'),
-    'https://threatlens-api.onrender.com/api'
+    getNormalizedBaseUrl('https://threatlens-api-wwxr.onrender.com/api'),
+    'https://threatlens-api-wwxr.onrender.com/api'
   );
   assert.equal(
-    getNormalizedBaseUrl('https://threatlens-api.onrender.com/api/', true, 'vercel.app'),
-    'https://threatlens-api.onrender.com/api'
+    getNormalizedBaseUrl('https://threatlens-api-wwxr.onrender.com/api/'),
+    'https://threatlens-api-wwxr.onrender.com/api'
+  );
+});
+
+test('getNormalizedBaseUrl automatically corrects legacy Render host without slug', () => {
+  assert.equal(
+    getNormalizedBaseUrl('https://threatlens-api.onrender.com'),
+    'https://threatlens-api-wwxr.onrender.com/api'
+  );
+  assert.equal(
+    getNormalizedBaseUrl('https://threatlens-api.onrender.com/api'),
+    'https://threatlens-api-wwxr.onrender.com/api'
   );
 });
 
 test('getNormalizedBaseUrl strips enclosing quotes from environment variables', () => {
   assert.equal(
-    getNormalizedBaseUrl('"https://threatlens-api.onrender.com"', true, 'vercel.app'),
-    'https://threatlens-api.onrender.com/api'
+    getNormalizedBaseUrl('"https://threatlens-api-wwxr.onrender.com"'),
+    'https://threatlens-api-wwxr.onrender.com/api'
   );
   assert.equal(
-    getNormalizedBaseUrl("'https://threatlens-api.onrender.com'", true, 'vercel.app'),
-    'https://threatlens-api.onrender.com/api'
+    getNormalizedBaseUrl("'https://threatlens-api-wwxr.onrender.com'"),
+    'https://threatlens-api-wwxr.onrender.com/api'
   );
   assert.equal(
-    getNormalizedBaseUrl('"https://threatlens-api.onrender.com/api"', true, 'vercel.app'),
-    'https://threatlens-api.onrender.com/api'
+    getNormalizedBaseUrl('"https://threatlens-api-wwxr.onrender.com/api"'),
+    'https://threatlens-api-wwxr.onrender.com/api'
   );
 });

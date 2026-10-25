@@ -400,6 +400,33 @@ def test_cross_origin_cors_preflight_on_login():
     assert res.headers.get("access-control-allow-credentials") == "true"
     assert "POST" in res.headers.get("access-control-allow-methods", "")
 
+def test_vercel_preview_and_branch_subdomains_allowed_by_cors():
+    """Verify that dynamic Vercel branch/preview subdomains match allow_origin_regex."""
+    preview_origin = "https://threatlens-cyber-threat-intelligence-6trzh8fd4.vercel.app"
+    res = client.options(
+        "/api/auth/login",
+        headers={
+            "Origin": preview_origin,
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        }
+    )
+    assert res.status_code == 200
+    assert res.headers.get("access-control-allow-origin") == preview_origin
+    assert res.headers.get("access-control-allow-credentials") == "true"
+
+    # Untrusted domain must be rejected
+    bad_res = client.options(
+        "/api/auth/login",
+        headers={
+            "Origin": "https://untrusted-external-domain.com",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        }
+    )
+    assert bad_res.status_code == 400
+
+
 def test_clean_origin_strips_quotes_and_trailing_slashes():
     from app.config import clean_origin
     assert clean_origin('"https://threatlens.vercel.app/"') == "https://threatlens.vercel.app"
